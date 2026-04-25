@@ -1,17 +1,9 @@
-body {
-    background-color: #121212;
-    color: #ffffff;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    text-align: center;
-    padding: 20px;
-    margin: 0;
-}
-
+body { background-color: #121212; color: #ffffff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 20px; margin: 0; }
 h1 { color: #f1c40f; text-transform: uppercase; letter-spacing: 2px; }
 .hidden { display: none !important; }
 
 /* Boutons classiques */
-input { padding: 10px; margin: 5px; border-radius: 5px; border: none; background-color: #333; color: white; text-align: center; }
+input { padding: 10px; margin: 5px; border-radius: 5px; border: none; background-color: #333; color: white; text-align: center; font-weight: bold;}
 .btn { padding: 10px 20px; margin: 5px; border-radius: 5px; border: none; background-color: #f1c40f; color: #121212; font-weight: bold; cursor: pointer; transition: 0.2s; }
 .btn:hover { background-color: #d4ac0d; }
 .btn-secondary { background-color: #3498db; color: white; }
@@ -25,59 +17,50 @@ input { padding: 10px; margin: 5px; border-radius: 5px; border: none; background
 .active-game { background-color: #9b59b6; color: white; cursor: pointer; border: 2px solid #8e44ad; }
 .active-game:hover { background-color: #8e44ad; }
 
-/* --- MACHINE À SOUS --- */
+/* --- MACHINE À SOUS 5x3 --- */
 .slot-machine {
-    background-color: #222;
-    padding: 20px;
-    border-radius: 15px;
-    border: 4px solid #f1c40f;
-    display: inline-block;
-    box-shadow: 0 0 20px rgba(241, 196, 15, 0.3);
+    background-color: #222; padding: 20px; border-radius: 15px; border: 4px solid #f1c40f; 
+    display: inline-block; box-shadow: 0 0 20px rgba(241, 196, 15, 0.3);
 }
 
-.reels {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 20px;
-    background-color: #111;
-    padding: 15px;
-    border-radius: 10px;
-    border-top: 3px solid #000;
-    border-bottom: 3px solid #333;
+.slot-window {
+    display: flex; justify-content: center; gap: 10px; margin-bottom: 20px;
+    background-color: #111; padding: 10px; border-radius: 10px;
+    border-top: 3px solid #000; border-bottom: 3px solid #333;
+    height: 240px; /* 3 symboles de 80px */
+    overflow: hidden; /* Cache ce qui dépasse (très important pour l'animation) */
 }
 
-.reel {
-    width: 60px;
-    height: 80px;
-    background-color: #fff;
-    color: #000;
-    font-size: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 5px;
-    box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+.reel-container {
+    width: 80px; height: 240px; background-color: #fff;
+    border-radius: 5px; box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
 }
 
-.slot-controls {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 15px;
+.reel-strip {
+    display: flex; flex-direction: column; width: 100%;
+    /* L'animation (transition) sera injectée par le JavaScript */
 }
 
-.spin-btn {
-    background-color: #e74c3c;
-    color: white;
-    font-size: 1.2em;
-    padding: 10px 30px;
+.symbol {
+    width: 80px; height: 80px; display: flex;
+    align-items: center; justify-content: center;
+    border-bottom: 1px solid rgba(0,0,0,0.1); box-sizing: border-box;
 }
+
+.symbol img {
+    width: 65px; height: 65px; object-fit: contain;
+    filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.4));
+}
+
+.slot-controls { display: flex; justify-content: center; align-items: center; gap: 15px; }
+.spin-btn { background-color: #e74c3c; color: white; font-size: 1.2em; padding: 10px 30px; }
 .spin-btn:hover { background-color: #c0392b; }
+.spin-btn:disabled { background-color: #555; cursor: not-allowed; }
 
-.slot-msg {
-    margin-top: 15px;
-    font-size: 1.1em;
-    font-weight: bold;
-    min-height: 25px;
+.slot-msg { margin-top: 10px; font-size: 1.1em; font-weight: bold; min-height: 25px; }
+.fs-msg { color: #9b59b6; font-weight: bold; font-size: 1.2em; margin-top: 10px; text-transform: uppercase; animation: pulse 1s infinite alternate;}
+
+@keyframes pulse {
+    0% { transform: scale(1); text-shadow: 0 0 5px #9b59b6; }
+    100% { transform: scale(1.05); text-shadow: 0 0 15px #9b59b6; }
 }

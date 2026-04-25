@@ -41,26 +41,27 @@
 
     <div id="slot-section" class="hidden">
         <button id="btn-back-lobby" class="btn-small" style="margin-bottom: 20px;">⬅ Retour au Lobby</button>
-        <h2>Machine à Sous (5 Rouleaux)</h2>
+        <h2>CHBK Slot (243 Ways)</h2>
         
         <div class="slot-machine">
-            <div class="reels">
-                <div class="reel" id="reel-1">🍒</div>
-                <div class="reel" id="reel-2">🍒</div>
-                <div class="reel" id="reel-3">🍒</div>
-                <div class="reel" id="reel-4">🍒</div>
-                <div class="reel" id="reel-5">🍒</div>
+            <div class="slot-window">
+                <div class="reel-container"><div class="reel-strip" id="strip-0"></div></div>
+                <div class="reel-container"><div class="reel-strip" id="strip-1"></div></div>
+                <div class="reel-container"><div class="reel-strip" id="strip-2"></div></div>
+                <div class="reel-container"><div class="reel-strip" id="strip-3"></div></div>
+                <div class="reel-container"><div class="reel-strip" id="strip-4"></div></div>
             </div>
             
             <div class="slot-controls">
                 <label for="bet-amount">Mise :</label>
-                <input type="number" id="bet-amount" value="100" min="10" step="10">
+                <input type="number" id="bet-amount" value="50" min="10" step="10">
                 <button id="btn-spin" class="btn spin-btn">JOUER</button>
             </div>
+            <p id="freespin-message" class="fs-msg"></p>
             <p id="slot-message" class="slot-msg">Prêt à tenter ta chance ?</p>
         </div>
     </div>
 
-    <script type="module" src="app.js?v=3"></script>
+    <script type="module" src="app.js?v=4"></script>
 </body>
 </html>

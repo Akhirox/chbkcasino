@@ -16,33 +16,60 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
-// --- Éléments HTML ---
+// Éléments HTML
 const loginSection = document.getElementById('login-section');
 const casinoSection = document.getElementById('casino-section');
 const slotSection = document.getElementById('slot-section');
-const authMessage = document.getElementById('auth-message');
-const playerNameDisplay = document.getElementById('player-name');
 const balanceDisplay = document.getElementById('brundle-balance');
-const btnClaimBonus = document.getElementById('btn-claim-bonus');
-const bonusMessage = document.getElementById('bonus-message');
-
-// Éléments Slot
-const btnOpenSlot = document.getElementById('btn-open-slot');
-const btnBackLobby = document.getElementById('btn-back-lobby');
 const btnSpin = document.getElementById('btn-spin');
 const betAmountInput = document.getElementById('bet-amount');
 const slotMessage = document.getElementById('slot-message');
-const reelsUI = [
-    document.getElementById('reel-1'),
-    document.getElementById('reel-2'),
-    document.getElementById('reel-3'),
-    document.getElementById('reel-4'),
-    document.getElementById('reel-5')
+const fsMessage = document.getElementById('freespin-message');
+
+let currentBalance = 0;
+let freeSpins = 0;
+let isSpinning = false;
+
+// --- CONFIGURATION DE LA MACHINE À SOUS ---
+// Payouts : Multiplicateurs de la mise pour 3, 4 ou 5 symboles alignés de gauche à droite
+const SYM_CONFIG = {
+    cherry:  { file: 'slot_cherry.png',  payout: [0.5, 1, 2] },
+    lemon:   { file: 'slot_lemon.png',   payout: [0.5, 1, 2] },
+    orange:  { file: 'slot_orange.png',  payout: [0.5, 1, 2] },
+    grapes:  { file: 'slot_grapes.png',  payout: [0.5, 1, 2] },
+    prunes:  { file: 'slot_prunes.png',  payout: [0.5, 1, 2] },
+    star:    { file: 'slot_star.png',    payout: [1, 2, 5] },
+    bell:    { file: 'slot_bell.png',    payout: [1, 2, 5] },
+    diamond: { file: 'slot_diamond.png', payout: [2, 5, 10] },
+    s67:     { file: 'slot_67.png',      payout: [5, 10, 25] },
+    wild:    { file: 'slot_wild.png',    payout: [0, 0, 0] }, // Remplace les autres
+    scatter: { file: 'slot_chbk.png',    payout: [0, 0, 0] }  // Déclenche les tours gratuits
+};
+
+// Bande (Reel Tape) pour simuler la rareté (plus il y a de noms, plus c'est fréquent)
+const reelTape = [
+    'cherry','cherry','cherry','lemon','lemon','lemon','orange','orange','orange',
+    'grapes','grapes','prunes','prunes', 
+    'star','star','bell','bell', 
+    'diamond','diamond', 
+    's67', 
+    'wild','wild', 
+    'scatter'
 ];
 
-let currentBalance = 0; // On stocke le solde localement pour jouer vite
+// Initialisation visuelle au démarrage (3 symboles aléatoires par colonne)
+function initReels() {
+    for(let col = 0; col < 5; col++) {
+        let html = '';
+        for(let row = 0; row < 3; row++) {
+            const sym = reelTape[Math.floor(Math.random() * reelTape.length)];
+            html += `<div class="symbol"><img src="slot_symbols/${SYM_CONFIG[sym].file}"></div>`;
+        }
+        document.getElementById(`strip-${col}`).innerHTML = html;
+    }
+}
 
-// --- AUTHENTIFICATION ---
+// --- LOGIQUE AUTH & LOBBY ---
 document.getElementById('btn-google-login').addEventListener('click', () => signInWithPopup(auth, provider));
 document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
 
@@ -50,19 +77,11 @@ onAuthStateChanged(auth, async (user) => {
     if (user) {
         loginSection.classList.add('hidden');
         casinoSection.classList.remove('hidden');
-        slotSection.classList.add('hidden');
-        playerNameDisplay.textContent = user.displayName;
-        
-        const userRef = doc(db, "users", user.uid);
-        const userSnap = await getDoc(userRef);
-
-        if (!userSnap.exists()) {
-            await setDoc(userRef, { name: user.displayName, balance: 0, lastClaimDate: null });
-            currentBalance = 0;
-        } else {
-            currentBalance = userSnap.data().balance;
-        }
+        document.getElementById('player-name').textContent = user.displayName;
+        const userSnap = await getDoc(doc(db, "users", user.uid));
+        currentBalance = userSnap.exists() ? userSnap.data().balance : 0;
         balanceDisplay.textContent = currentBalance;
+        initReels();
     } else {
         loginSection.classList.remove('hidden');
         casinoSection.classList.add('hidden');
@@ -70,104 +89,161 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// --- BONUS QUOTIDIEN ---
-btnClaimBonus.addEventListener('click', async () => {
+document.getElementById('btn-claim-bonus').addEventListener('click', async () => { /* Bonus gardé intact */
     const user = auth.currentUser;
-    if (!user) return;
-    btnClaimBonus.disabled = true;
-
     const userRef = doc(db, "users", user.uid);
     const userSnap = await getDoc(userRef);
-    const userData = userSnap.data();
     const today = new Date().toISOString().split('T')[0];
-
-    if (userData.lastClaimDate === today) {
-        bonusMessage.textContent = "Tu as déjà récupéré tes Brundles aujourd'hui !";
-        bonusMessage.style.color = "#e74c3c";
-    } else {
+    if (userSnap.data().lastClaimDate !== today) {
         currentBalance += 2500;
         await updateDoc(userRef, { balance: currentBalance, lastClaimDate: today });
         balanceDisplay.textContent = currentBalance;
-        bonusMessage.textContent = "Jackpot ! 2500 Brundles ajoutés.";
-        bonusMessage.style.color = "#2ecc71";
+        document.getElementById('bonus-message').textContent = "Jackpot ! +2500 Brundles.";
+        document.getElementById('bonus-message').style.color = "#2ecc71";
     }
-    btnClaimBonus.disabled = false;
 });
 
-// --- NAVIGATION CASINO <-> MACHINE A SOUS ---
-btnOpenSlot.addEventListener('click', () => {
-    casinoSection.classList.add('hidden');
-    slotSection.classList.remove('hidden');
-    slotMessage.textContent = "Prêt à tenter ta chance ?";
-});
+document.getElementById('btn-open-slot').addEventListener('click', () => { casinoSection.classList.add('hidden'); slotSection.classList.remove('hidden'); });
+document.getElementById('btn-back-lobby').addEventListener('click', () => { slotSection.classList.add('hidden'); casinoSection.classList.remove('hidden'); balanceDisplay.textContent = currentBalance; });
 
-btnBackLobby.addEventListener('click', () => {
-    slotSection.classList.add('hidden');
-    casinoSection.classList.remove('hidden');
-    balanceDisplay.textContent = currentBalance; // Met à jour le lobby
-});
-
-// --- LOGIQUE DE LA MACHINE À SOUS ---
-// C'est ici que tu pourras mettre tes propres symboles plus tard !
-const symbols = ['🍒', '🍋', '🍉', '🔔', '💎', '👑']; 
-
+// --- LE MOTEUR DE LA MACHINE À SOUS ---
 btnSpin.addEventListener('click', async () => {
+    if (isSpinning) return;
     const user = auth.currentUser;
-    if (!user) return;
+    let bet = parseInt(betAmountInput.value);
 
-    const bet = parseInt(betAmountInput.value);
-    
-    // Vérifications
-    if (isNaN(bet) || bet <= 0) {
-        slotMessage.textContent = "Mise invalide !"; return;
-    }
-    if (bet > currentBalance) {
-        slotMessage.textContent = "Fonds insuffisants !"; return;
+    if (freeSpins > 0) {
+        // En Free Spins, on ne paye pas la mise !
+        fsMessage.textContent = `🎰 FREE SPINS : Il t'en reste ${freeSpins} ! (Gains X2)`;
+    } else {
+        if (isNaN(bet) || bet <= 0) { slotMessage.textContent = "Mise invalide !"; return; }
+        if (bet > currentBalance) { slotMessage.textContent = "Fonds insuffisants !"; return; }
+        currentBalance -= bet;
+        fsMessage.textContent = "";
     }
 
-    // On bloque le bouton et on déduit la mise locale
+    isSpinning = true;
     btnSpin.disabled = true;
-    currentBalance -= bet;
-    slotMessage.textContent = "Ça tourne...";
+    slotMessage.textContent = "Bonne chance...";
     slotMessage.style.color = "white";
 
-    // Animation basique des rouleaux (dure 1 seconde)
-    let spinInterval = setInterval(() => {
-        reelsUI.forEach(reel => {
-            reel.textContent = symbols[Math.floor(Math.random() * symbols.length)];
-        });
-    }, 100);
+    // Génération du résultat (Tableau 5 colonnes x 3 rangées)
+    const finalGrid = [[], [], [], [], []];
+    for (let col = 0; col < 5; col++) {
+        for (let row = 0; row < 3; row++) {
+            finalGrid[col].push(reelTape[Math.floor(Math.random() * reelTape.length)]);
+        }
+    }
 
-    // Arrêt de l'animation après 1 seconde et calcul des gains
-    setTimeout(async () => {
-        clearInterval(spinInterval);
+    // ANIMATION VISUELLE (SMOOTH SCROLL)
+    // On construit une longue bande avec : [3 symboles actuels] + [15 symboles de flou] + [3 symboles finaux]
+    for (let col = 0; col < 5; col++) {
+        const strip = document.getElementById(`strip-${col}`);
+        let currentHTML = strip.innerHTML; // Les 3 anciens
         
-        // Résultats finaux
-        const results = [];
-        for(let i = 0; i < 5; i++) {
-            const randomSymbol = symbols[Math.floor(Math.random() * symbols.length)];
-            results.push(randomSymbol);
-            reelsUI[i].textContent = randomSymbol;
+        let blurHTML = '';
+        for(let i=0; i<15; i++) {
+            let randomSym = reelTape[Math.floor(Math.random() * reelTape.length)];
+            blurHTML += `<div class="symbol"><img src="slot_symbols/${SYM_CONFIG[randomSym].file}"></div>`;
         }
 
-        // On compte si des symboles sont identiques
-        const counts = {};
-        results.forEach(sym => counts[sym] = (counts[sym] || 0) + 1);
-        const maxMatches = Math.max(...Object.values(counts));
+        let finalHTML = '';
+        for(let row=0; row<3; row++) {
+            finalHTML += `<div class="symbol"><img src="slot_symbols/${SYM_CONFIG[finalGrid[col][row]].file}"></div>`;
+        }
 
-        let winAmount = 0;
-        if (maxMatches === 5) { winAmount = bet * 50; slotMessage.textContent = `JACKPOT MEGA ! +${winAmount} Brundles !`; slotMessage.style.color = "#f1c40f"; }
-        else if (maxMatches === 4) { winAmount = bet * 10; slotMessage.textContent = `SUPER GAIN ! +${winAmount} Brundles !`; slotMessage.style.color = "#2ecc71"; }
-        else if (maxMatches === 3) { winAmount = bet * 3; slotMessage.textContent = `Gagné ! +${winAmount} Brundles !`; slotMessage.style.color = "#3498db"; }
-        else { slotMessage.textContent = "Perdu... Essaie encore !"; slotMessage.style.color = "#e74c3c"; }
+        // On assemble tout et on réinitialise la position
+        strip.style.transition = 'none';
+        strip.style.transform = `translateY(0px)`;
+        strip.innerHTML = currentHTML + blurHTML + finalHTML;
 
-        // Ajout du gain au solde local
-        currentBalance += winAmount;
+        // Force le navigateur à appliquer le HTML avant de lancer la transition
+        strip.offsetHeight; 
 
-        // MISE À JOUR DE FIREBASE UNE SEULE FOIS (Optimisation)
-        const userRef = doc(db, "users", user.uid);
-        await updateDoc(userRef, { balance: currentBalance });
+        // On lance l'animation (On décale de 18 symboles vers le haut, chaque symbole = 80px -> 18*80 = 1440)
+        // Les colonnes s'arrêtent une par une (col 0 à 1s, col 1 à 1.3s...)
+        const stopTime = 1 + (col * 0.3);
+        strip.style.transition = `transform ${stopTime}s cubic-bezier(0.1, 0.7, 0.1, 1)`;
+        strip.style.transform = `translateY(-1440px)`;
+        
+        // Nettoyage après l'animation de la colonne
+        setTimeout(() => {
+            strip.style.transition = 'none';
+            strip.style.transform = `translateY(0px)`;
+            strip.innerHTML = finalHTML; // On ne garde que les 3 bons pour le prochain tour
+        }, stopTime * 1000);
+    }
 
+    // --- CALCUL DES GAINS (Une fois que tout est arrêté, soit environ 2.2 secondes) ---
+    setTimeout(async () => {
+        let totalWin = 0;
+        let scatterCount = 0;
+
+        // Compter les Scatters
+        for (let col = 0; col < 5; col++) {
+            for (let row = 0; row < 3; row++) {
+                if (finalGrid[col][row] === 'scatter') scatterCount++;
+            }
+        }
+
+        // Système Multi-Way 243
+        const baseSymbols = ['cherry','lemon','orange','grapes','prunes','star','bell','diamond','s67'];
+        
+        baseSymbols.forEach(symType => {
+            let ways = 1;
+            let length = 0;
+            
+            for (let col = 0; col < 5; col++) {
+                let countInCol = 0;
+                for (let row = 0; row < 3; row++) {
+                    // Le Wild sert de joker pour tous les symboles de base
+                    if (finalGrid[col][row] === symType || finalGrid[col][row] === 'wild') {
+                        countInCol++;
+                    }
+                }
+                
+                if (countInCol > 0) {
+                    ways *= countInCol; // Ex: 2 cerises col1 x 1 cerise col2 x 3 cerises col3 = 6 chemins (ways) gagnants
+                    length++;
+                } else {
+                    break; // La chaîne est cassée
+                }
+            }
+            
+            // On paie à partir de 3 symboles consécutifs (length >= 3)
+            if (length >= 3) {
+                let multiplier = SYM_CONFIG[symType].payout[length - 3]; // L'index 0 correspond à 3 symboles
+                totalWin += (bet * multiplier * ways);
+            }
+        });
+
+        // Doubler les gains si on est en Free Spins
+        if (freeSpins > 0) { totalWin *= 2; freeSpins--; }
+
+        // Mettre à jour les Free Spins si on a trouvé 3+ Scatters
+        if (scatterCount >= 3) {
+            freeSpins += 10;
+            slotMessage.textContent = "BOOM ! 3 SCATTERS ! +10 FREE SPINS !";
+            slotMessage.style.color = "#f1c40f";
+        } else if (totalWin > 0) {
+            slotMessage.textContent = `INCROYABLE ! Gain total : +${totalWin} Brundles !`;
+            slotMessage.style.color = "#2ecc71";
+        } else {
+            slotMessage.textContent = "Dommage... retente ta chance !";
+            slotMessage.style.color = "#e74c3c";
+            if(freeSpins === 0) fsMessage.textContent = "";
+        }
+
+        // On sauvegarde sur Firebase
+        currentBalance += totalWin;
+        await updateDoc(doc(db, "users", user.uid), { balance: currentBalance });
+        
+        isSpinning = false;
         btnSpin.disabled = false;
-    }, 1000);
+        
+        // Si on a des tours gratuits, on relance automatiquement après 1.5 seconde !
+        if(freeSpins > 0 && scatterCount < 3) {
+            setTimeout(() => { document.getElementById('btn-spin').click(); }, 1500);
+        }
+    }, 2400); // Temps d'attente max d'animation (1 + 4*0.3 + marge)
 });
