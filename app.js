@@ -16,6 +16,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
+// Éléments UI
 const balanceDisplay = document.getElementById('brundle-balance');
 const btnSpin = document.getElementById('btn-spin');
 const betAmountInput = document.getElementById('bet-amount');
@@ -36,37 +37,59 @@ let isAutoSpinning = false;
 let autoSpinsRemaining = 0;
 let winLineTimer = null;
 
-// --- LES 25 LIGNES DE PAIEMENT (Basées sur ta capture) ---
-// Format : index du tableau = colonne, valeur = ligne (0=haut, 1=milieu, 2=bas)
+// --- MOTEUR AUDIO (Web Audio API) ---
+let audioCtx = null;
+function initAudio() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+// On initialise le son au premier clic n'importe où sur la page (sécurité navigateur)
+document.body.addEventListener('click', initAudio, { once: true });
+
+function playSound(type) {
+    if(!audioCtx) return;
+    const t = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    
+    if (type === 'spin') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, t);
+        osc.frequency.exponentialRampToValueAtTime(1200, t + 0.05);
+        gain.gain.setValueAtTime(0.02, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+        osc.start(t); osc.stop(t + 0.05);
+    } else if (type === 'stop') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(120, t);
+        osc.frequency.exponentialRampToValueAtTime(40, t + 0.15);
+        gain.gain.setValueAtTime(0.3, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+        osc.start(t); osc.stop(t + 0.15);
+    } else if (type === 'win') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(300, t);
+        osc.frequency.setValueAtTime(450, t + 0.1);
+        osc.frequency.setValueAtTime(600, t + 0.2);
+        osc.frequency.setValueAtTime(900, t + 0.3);
+        gain.gain.setValueAtTime(0.1, t);
+        gain.gain.linearRampToValueAtTime(0, t + 0.6);
+        osc.start(t); osc.stop(t + 0.6);
+    }
+}
+
+// --- LES 25 LIGNES DE PAIEMENT ---
 const PAYLINES = [
-    [1, 1, 1, 1, 1], // Ligne 1 : Tout au milieu
-    [0, 0, 0, 0, 0], // Ligne 2 : Tout en haut
-    [2, 2, 2, 2, 2], // Ligne 3 : Tout en bas
-    [0, 1, 2, 1, 0], // Ligne 4 : V
-    [2, 1, 0, 1, 2], // Ligne 5 : V inversé
-    [0, 0, 1, 0, 0], // Ligne 6
-    [2, 2, 1, 2, 2], // Ligne 7
-    [1, 0, 0, 0, 1], // Ligne 8
-    [1, 2, 2, 2, 1], // Ligne 9
-    [1, 0, 1, 0, 1], // Ligne 10
-    [1, 2, 1, 2, 1], // Ligne 11
-    [0, 1, 0, 1, 0], // Ligne 12
-    [2, 1, 2, 1, 2], // Ligne 13
-    [1, 1, 0, 1, 1], // Ligne 14
-    [1, 1, 2, 1, 1], // Ligne 15
-    [0, 2, 2, 2, 0], // Ligne 16
-    [2, 0, 0, 0, 2], // Ligne 17
-    [0, 1, 2, 2, 2], // Ligne 18
-    [2, 1, 0, 0, 0], // Ligne 19
-    [0, 2, 0, 2, 0], // Ligne 20
-    [2, 0, 2, 0, 2], // Ligne 21
-    [0, 0, 2, 0, 0], // Ligne 22
-    [2, 2, 0, 2, 2], // Ligne 23
-    [0, 2, 1, 2, 0], // Ligne 24
-    [2, 0, 1, 0, 2]  // Ligne 25
+    [1, 1, 1, 1, 1], [0, 0, 0, 0, 0], [2, 2, 2, 2, 2], [0, 1, 2, 1, 0], [2, 1, 0, 1, 2],
+    [0, 0, 1, 0, 0], [2, 2, 1, 2, 2], [1, 0, 0, 0, 1], [1, 2, 2, 2, 1], [1, 0, 1, 0, 1],
+    [1, 2, 1, 2, 1], [0, 1, 0, 1, 0], [2, 1, 2, 1, 2], [1, 1, 0, 1, 1], [1, 1, 2, 1, 1],
+    [0, 2, 2, 2, 0], [2, 0, 0, 0, 2], [0, 1, 2, 2, 2], [2, 1, 0, 0, 0], [0, 2, 0, 2, 0],
+    [2, 0, 2, 0, 2], [0, 0, 2, 0, 0], [2, 2, 0, 2, 2], [0, 2, 1, 2, 0], [2, 0, 1, 0, 2]
 ];
 
-// --- HAUTE VOLATILITÉ : Multiplicateurs de la mise TOTALE ---
+// --- HAUTE VOLATILITÉ ---
 const SYM_CONFIG = {
     cherry:  { file: 'slot_cherry.png',  payout: [0.1, 0.5, 2],  color: '#e74c3c' },
     lemon:   { file: 'slot_lemon.png',   payout: [0.1, 0.5, 2],  color: '#f1c40f' },
@@ -81,7 +104,6 @@ const SYM_CONFIG = {
     scatter: { file: 'slot_chbk.png',    payout: [0, 0, 0],      color: '#e74c3c' } 
 };
 
-// Bande RTP
 const reelTape = [
     'cherry','cherry','cherry','lemon','lemon','lemon', 'orange','orange','orange',
     'grapes','grapes', 'prunes','prunes', 'star','star', 'bell','bell', 
@@ -151,7 +173,7 @@ document.getElementById('btn-claim-bonus').addEventListener('click', async () =>
 document.getElementById('btn-open-slot').addEventListener('click', () => { document.getElementById('casino-section').classList.add('hidden'); document.getElementById('slot-section').classList.remove('hidden'); });
 document.getElementById('btn-back-lobby').addEventListener('click', () => { document.getElementById('slot-section').classList.add('hidden'); document.getElementById('casino-section').classList.remove('hidden'); balanceDisplay.textContent = currentBalance; stopAutoSpin(); });
 
-// --- SVG GESTION LIGNES ---
+// --- SVG GESTION LIGNES FIXEE ---
 function getSymbolCenter(col, row) {
     const x = 10 + (col * 80) + (col * 10) + 40; 
     const y = 10 + (row * 80) + 40; 
@@ -168,16 +190,14 @@ function drawWinningPaths(lineData) {
         }
     }
 
-    // Trace la ligne continue sur les 5 rouleaux
     let points = lineData.fullLine.map(p => `${getSymbolCenter(p.col, p.row).x},${getSymbolCenter(p.col, p.row).y}`).join(' ');
     let polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
     polyline.setAttribute('class', 'win-line');
     polyline.setAttribute('points', points);
     polyline.setAttribute('stroke', lineData.color);
-    polyline.setAttribute('stroke-width', '6');
+    polyline.setAttribute('stroke-width', '8');
     winLinesSvg.appendChild(polyline);
 
-    // Illumine uniquement les symboles qui ont gagné
     lineData.winningSymbols.forEach(p => {
         const symEl = document.getElementById(`sym-${p.col}-${p.row}`);
         if(symEl) {
@@ -189,6 +209,7 @@ function drawWinningPaths(lineData) {
 
 // --- AUTOSPIN ---
 btnAutoSpin.addEventListener('click', () => {
+    initAudio();
     autoSpinsRemaining = parseInt(autoSpinCountSelect.value);
     isAutoSpinning = true;
     btnAutoSpin.classList.add('hidden');
@@ -207,6 +228,7 @@ function stopAutoSpin() {
 
 // --- MOTEUR DE JEU ---
 btnSpin.addEventListener('click', () => {
+    initAudio();
     stopAutoSpin(); 
     if (!isSpinning) triggerSpin();
 });
@@ -252,10 +274,19 @@ async function triggerSpin() {
         }
     }
 
+    // Le bruit de rotation pendant que ça tourne
+    let spinTickInterval = setInterval(() => playSound('spin'), 120);
+
     for (let col = 0; col < 5; col++) {
         const strip = document.getElementById(`strip-${col}`);
+        
+        // CORRECTION DU BUG VISUEL : On enlève les IDs des anciens symboles pour ne pas les cibler
+        let oldHTML = strip.innerHTML.replace(/id="sym-\d-\d"/g, '');
+        
         let blurHTML = '';
-        for(let i=0; i<15; i++) {
+        // Plus le rouleau est loin, plus on met de symboles flous pour rallonger l'animation
+        let blurCount = 15 + (col * 5); 
+        for(let i=0; i<blurCount; i++) {
             blurHTML += `<div class="symbol"><img src="slot_symbols/${SYM_CONFIG[reelTape[Math.floor(Math.random() * reelTape.length)]].file}"></div>`;
         }
         let finalHTML = '';
@@ -265,33 +296,38 @@ async function triggerSpin() {
 
         strip.style.transition = 'none';
         strip.style.transform = `translateY(0px)`;
-        strip.innerHTML = strip.innerHTML + blurHTML + finalHTML;
+        strip.innerHTML = oldHTML + blurHTML + finalHTML;
         strip.offsetHeight; 
 
-        const stopTime = 0.8 + (col * 0.25); 
+        // SUSPENSE : Le temps d'arrêt augmente de 0.5s par rouleau
+        const stopTime = 1.0 + (col * 0.5); 
         strip.style.transition = `transform ${stopTime}s cubic-bezier(0.1, 0.7, 0.1, 1)`;
-        strip.style.transform = `translateY(-1440px)`;
+        // On décale la bande de toute la hauteur générée
+        strip.style.transform = `translateY(-${(3 + blurCount) * 80}px)`;
         
         setTimeout(() => {
             strip.style.transition = 'none';
             strip.style.transform = `translateY(0px)`;
             strip.innerHTML = finalHTML;
+            playSound('stop'); // Le clac de fin de rouleau
         }, stopTime * 1000);
     }
 
+    // Arrêt du son de rotation juste avant le dernier rouleau
+    setTimeout(() => clearInterval(spinTickInterval), 2900);
+
+    // Calcul des gains 3.2 secondes plus tard (après le dernier rouleau)
     setTimeout(async () => {
         let totalWin = 0;
         let scatterCount = 0;
         let allWinningPaths = [];
         
-        // 1. Comptage des Scatters
         for (let c = 0; c < 5; c++) {
             for (let r = 0; r < 3; r++) {
                 if (finalGrid[c][r] === 'scatter') scatterCount++;
             }
         }
 
-        // 2. Vérification des 25 Lignes
         PAYLINES.forEach(line => {
             let firstSym = null;
             let matchCount = 0;
@@ -303,7 +339,7 @@ async function triggerSpin() {
                 let sym = finalGrid[col][row];
                 fullLineCoords.push({col, row});
 
-                if (sym === 'scatter') break; // Le scatter ne paie pas sur les lignes
+                if (sym === 'scatter') break; 
 
                 if (firstSym === null) {
                     if (sym !== 'wild') firstSym = sym;
@@ -319,7 +355,7 @@ async function triggerSpin() {
                 }
             }
 
-            if (firstSym === null && matchCount > 0) firstSym = 's67'; // Cas full wilds
+            if (firstSym === null && matchCount > 0) firstSym = 's67'; 
 
             if (matchCount >= 3 && firstSym) {
                 let multiplier = SYM_CONFIG[firstSym].payout[matchCount - 3];
@@ -343,13 +379,14 @@ async function triggerSpin() {
         else if (scatterCount === 5) freeSpins += 30;
 
         if (scatterCount >= 3) {
+            playSound('win');
             slotMessage.textContent = `BOOM ! ${scatterCount} SCATTERS ! +${scatterCount === 3 ? 10 : (scatterCount === 4 ? 20 : 30)} FREE SPINS !`;
             slotMessage.style.color = "#f1c40f";
         } else if (totalWin > 0) {
+            playSound('win');
             slotMessage.textContent = `SUPER ! Gain : +${totalWin} Brundles !`;
             slotMessage.style.color = "#2ecc71";
             
-            // Animation des lignes
             let pathIndex = 0;
             function showNextLine() {
                 if(!isSpinning && allWinningPaths.length > 0) { 
@@ -376,8 +413,8 @@ async function triggerSpin() {
         if (freeSpins > 0 || isAutoSpinning) {
             if (isAutoSpinning && freeSpins === 0) autoSpinsRemaining--;
             if (isAutoSpinning && autoSpinsRemaining <= 0 && freeSpins === 0) stopAutoSpin();
-            else setTimeout(triggerSpin, totalWin > 0 ? 1800 : 500); 
+            else setTimeout(triggerSpin, totalWin > 0 ? 2500 : 800); 
         }
 
-    }, 2000); 
+    }, 3200); 
 }
