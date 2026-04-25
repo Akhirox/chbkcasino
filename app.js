@@ -27,8 +27,7 @@ const paytableContent = document.getElementById('paytable-content');
 const bigWinOverlay = document.getElementById('big-win-overlay');
 const bigWinAmount = document.getElementById('big-win-amount');
 
-// Les éléments pour l'affichage des lignes
-const winDisplaySection = document.getElementById('win-display-section');
+// Les éléments pour l'affichage des lignes (à droite)
 const winDisplayContent = document.getElementById('win-display-content');
 
 const autoSpinCountSelect = document.getElementById('auto-spin-count');
@@ -224,8 +223,8 @@ function drawWinningSymbols(symbolCoords) {
 
 function resetSymbolsVisuals() {
     bigWinOverlay.classList.add('hidden');
-    winDisplaySection.classList.add('hidden');
-    winDisplayContent.innerHTML = '';
+    // On remet le texte par défaut au lieu de masquer la div complète
+    winDisplayContent.innerHTML = '<p class="empty-win-msg">En attente d\'un gain...</p>';
     
     for(let c=0; c<5; c++) {
         for(let r=0; r<3; r++) {
@@ -304,7 +303,6 @@ async function triggerSpin() {
         
         for (let c = 0; c < 5; c++) for (let r = 0; r < 3; r++) if (finalGrid[c][r] === 'scatter') scatterCount++;
 
-        // Utilisation du bon index de tes lignes
         PAYLINES.forEach((line, index) => {
             let firstSym = null; let matchCount = 0; let winningSymbolsCoords = [];
             for(let col = 0; col < 5; col++) {
@@ -321,9 +319,8 @@ async function triggerSpin() {
                     totalWin += realPayout;
                     allWinningPaths.push(winningSymbolsCoords);
                     
-                    // CREATION DE LA MINI GRILLE
-                    // Les index de tes lignes ne sont pas de 0 à 19 pour l'affichage, on va afficher "Ligne Trouvée"
-                    let gridHTML = `<div class="win-line-box"><span>Ligne Trouvée : +${realPayout}</span><div class="mini-grid">`;
+                    // On affiche le numéro brut de la boucle + 1 pour l'ID, juste pour différencier les grilles
+                    let gridHTML = `<div class="win-line-box"><span>Gain : +${realPayout}</span><div class="mini-grid">`;
                     for(let r=0; r<3; r++) {
                         for(let c=0; c<5; c++) {
                             const isActive = winningSymbolsCoords.some(p => p.col === c && p.row === r);
@@ -339,10 +336,9 @@ async function triggerSpin() {
         if (freeSpins > 0) { totalWin *= 2; freeSpins--; }
         if (scatterCount === 3) freeSpins += 10; else if (scatterCount === 4) freeSpins += 20; else if (scatterCount === 5) freeSpins += 30;
 
-        // AFFICHAGE DES GAINS
+        // AFFICHAGE DES GAINS DANS LA COLONNE DE DROITE
         if (winGridsHTML !== '') {
             winDisplayContent.innerHTML = winGridsHTML;
-            winDisplaySection.classList.remove('hidden');
         }
 
         if (scatterCount >= 3) {
@@ -356,9 +352,13 @@ async function triggerSpin() {
             let pathIndex = 0;
             function showNextWinningSet() {
                 if(!isSpinning && allWinningPaths.length > 0) { 
-                    resetSymbolsVisuals();
-                    // On garde la grille visible pendant l'animation
-                    winDisplaySection.classList.remove('hidden');
+                    // On ne réinitialise plus TOUT le visuel ici, juste on éteint les symboles des rouleaux
+                    for(let c=0; c<5; c++) {
+                        for(let r=0; r<3; r++) {
+                            const el = document.getElementById(`sym-${c}-${r}`);
+                            if(el) { el.classList.remove('winning-sym'); el.classList.remove('dimmed'); }
+                        }
+                    }
                     drawWinningSymbols(allWinningPaths[pathIndex]); 
                     pathIndex = (pathIndex + 1) % allWinningPaths.length;
                     winLineTimer = setTimeout(showNextWinningSet, 1200); 
