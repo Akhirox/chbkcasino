@@ -27,8 +27,8 @@ const paytableContent = document.getElementById('paytable-content');
 const bigWinOverlay = document.getElementById('big-win-overlay');
 const bigWinAmount = document.getElementById('big-win-amount');
 
-// Les éléments pour l'affichage des lignes (à droite)
 const winDisplayContent = document.getElementById('win-display-content');
+const winDisplaySection = document.getElementById('win-display-section');
 
 const autoSpinCountSelect = document.getElementById('auto-spin-count');
 const btnAutoSpin = document.getElementById('btn-auto-spin');
@@ -76,28 +76,12 @@ function playSound(type) {
     }
 }
 
-// --- TES 20 LIGNES EXACTES (O=0, M=1, B=2) ---
+// --- TES 20 LIGNES EXACTES ---
 const PAYLINES = [
-    [1, 1, 1, 1, 1], // 1
-    [0, 0, 0, 0, 0], // 2
-    [2, 2, 2, 2, 2], // 3
-    [0, 1, 2, 1, 0], // 4
-    [2, 1, 0, 1, 2], // 5
-    [0, 0, 1, 0, 0], // 6
-    [2, 2, 1, 2, 2], // 7
-    [1, 2, 2, 2, 1], // 9 (le 8 dans ta liste n'y était pas)
-    [1, 0, 1, 0, 1], // 10
-    [1, 2, 1, 2, 1], // 11
-    [0, 1, 0, 1, 0], // 12
-    [2, 1, 2, 1, 2], // 13
-    [1, 1, 0, 1, 1], // 14
-    [1, 1, 2, 1, 1], // 15
-    [0, 1, 1, 1, 0], // 16
-    [2, 1, 1, 1, 2], // 17
-    [0, 1, 2, 2, 2], // 18
-    [2, 1, 0, 0, 0], // 19
-    [0, 0, 1, 2, 2], // 20
-    [2, 2, 1, 0, 0]  // 21
+    [1, 1, 1, 1, 1], [0, 0, 0, 0, 0], [2, 2, 2, 2, 2], [0, 1, 2, 1, 0], [2, 1, 0, 1, 2],
+    [0, 0, 1, 0, 0], [2, 2, 1, 2, 2], [1, 2, 2, 2, 1], [1, 0, 1, 0, 1], [1, 2, 1, 2, 1],
+    [0, 1, 0, 1, 0], [2, 1, 2, 1, 2], [1, 1, 0, 1, 1], [1, 1, 2, 1, 1], [0, 1, 1, 1, 0],
+    [2, 1, 1, 1, 2], [0, 1, 2, 2, 2], [2, 1, 0, 0, 0], [0, 0, 1, 2, 2], [2, 2, 1, 0, 0] 
 ];
 
 const SYM_CONFIG = {
@@ -114,15 +98,21 @@ const SYM_CONFIG = {
     scatter: { file: 'slot_chbk.png',    payout: [0, 0, 0] } 
 };
 
+// --- NOUVEAU RTP PARFAIT A 100% ---
 const reelTape = [
-    'cherry','cherry','cherry','cherry','cherry','cherry',
-    'lemon','lemon','lemon','lemon','lemon',
-    'orange','orange','orange','orange',
-    'grapes','grapes','grapes',
-    'prunes','prunes',
-    'star','star','bell','bell', 
-    'diamond','diamond', 's67', 'wild','wild', 'scatter','scatter' 
+    ...Array(20).fill('cherry'),  // 20%
+    ...Array(18).fill('lemon'),   // 18%
+    ...Array(15).fill('orange'),  // 15%
+    ...Array(12).fill('grapes'),  // 12%
+    ...Array(9).fill('prunes'),   // 9%
+    ...Array(6).fill('star'),     // 6%
+    ...Array(6).fill('bell'),     // 6%
+    ...Array(5).fill('diamond'),  // 5%
+    ...Array(5).fill('wild'),     // 5%
+    ...Array(2).fill('s67'),      // 2%
+    ...Array(2).fill('scatter')   // 2%
 ];
+// Total = 100 éléments dans la bande
 
 function updatePaytable() {
     let bet = parseInt(betAmountInput.value);
@@ -223,7 +213,6 @@ function drawWinningSymbols(symbolCoords) {
 
 function resetSymbolsVisuals() {
     bigWinOverlay.classList.add('hidden');
-    // On remet le texte par défaut au lieu de masquer la div complète
     winDisplayContent.innerHTML = '<p class="empty-win-msg">En attente d\'un gain...</p>';
     
     for(let c=0; c<5; c++) {
@@ -319,7 +308,6 @@ async function triggerSpin() {
                     totalWin += realPayout;
                     allWinningPaths.push(winningSymbolsCoords);
                     
-                    // On affiche le numéro brut de la boucle + 1 pour l'ID, juste pour différencier les grilles
                     let gridHTML = `<div class="win-line-box"><span>Gain : +${realPayout}</span><div class="mini-grid">`;
                     for(let r=0; r<3; r++) {
                         for(let c=0; c<5; c++) {
@@ -336,7 +324,6 @@ async function triggerSpin() {
         if (freeSpins > 0) { totalWin *= 2; freeSpins--; }
         if (scatterCount === 3) freeSpins += 10; else if (scatterCount === 4) freeSpins += 20; else if (scatterCount === 5) freeSpins += 30;
 
-        // AFFICHAGE DES GAINS DANS LA COLONNE DE DROITE
         if (winGridsHTML !== '') {
             winDisplayContent.innerHTML = winGridsHTML;
         }
@@ -352,7 +339,6 @@ async function triggerSpin() {
             let pathIndex = 0;
             function showNextWinningSet() {
                 if(!isSpinning && allWinningPaths.length > 0) { 
-                    // On ne réinitialise plus TOUT le visuel ici, juste on éteint les symboles des rouleaux
                     for(let c=0; c<5; c++) {
                         for(let r=0; r<3; r++) {
                             const el = document.getElementById(`sym-${c}-${r}`);
