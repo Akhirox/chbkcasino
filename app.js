@@ -82,7 +82,7 @@ const PAYLINES = [
     [0, 2, 2, 2, 0], [2, 0, 0, 0, 2], [0, 1, 2, 2, 2], [2, 1, 0, 0, 0], [0, 2, 1, 2, 0], [2, 0, 1, 0, 2] 
 ];
 
-// --- RTP RÉÉQUILIBRÉ (Maintien en vie adouci) ---
+// --- RTP ---
 const SYM_CONFIG = {
     cherry:  { file: 'slot_cherry.png',  payout: [0.1, 0.3, 1] },
     lemon:   { file: 'slot_lemon.png',   payout: [0.1, 0.3, 1] },
@@ -97,7 +97,6 @@ const SYM_CONFIG = {
     scatter: { file: 'slot_chbk.png',    payout: [0, 0, 0] } 
 };
 
-// On ajoute un tout petit peu de symboles spéciaux pour la jouabilité
 const reelTape = [
     'cherry','cherry','cherry','cherry','cherry','cherry',
     'lemon','lemon','lemon','lemon','lemon',
@@ -125,7 +124,6 @@ function updatePaytable() {
     paytableContent.innerHTML = html;
 }
 
-// --- BOUTONS ET CLAVIER (ESPACE) ---
 document.querySelectorAll('.btn-bet').forEach(btn => {
     btn.addEventListener('click', (e) => {
         if (isSpinning) return;
@@ -143,13 +141,10 @@ document.querySelectorAll('.btn-bet').forEach(btn => {
 });
 betAmountInput.addEventListener('input', updatePaytable);
 
-// Touche Espace pour lancer la machine
 window.addEventListener('keydown', (e) => {
     if (e.code === 'Space' && !document.getElementById('slot-section').classList.contains('hidden')) {
-        e.preventDefault(); // Empêche l'écran de défiler vers le bas
-        if (!btnSpin.disabled && !isSpinning) {
-            btnSpin.click();
-        }
+        e.preventDefault(); 
+        if (!btnSpin.disabled && !isSpinning) btnSpin.click();
     }
 });
 
@@ -164,7 +159,7 @@ function initReels() {
     }
 }
 
-// --- CONNEXION & LOBBY ---
+// --- CONNEXION & LOBBY (AVEC CORRECTION DU BUG) ---
 document.getElementById('btn-google-login').addEventListener('click', () => signInWithPopup(auth, provider));
 document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
 
@@ -173,8 +168,22 @@ onAuthStateChanged(auth, async (user) => {
         document.getElementById('login-section').classList.add('hidden');
         document.getElementById('casino-section').classList.remove('hidden');
         document.getElementById('player-name').textContent = user.displayName;
-        const userSnap = await getDoc(doc(db, "users", user.uid));
-        updateBalanceDisplays(userSnap.exists() ? userSnap.data().balance : 0);
+        
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+        
+        // LE FIX EST ICI : Création de la sauvegarde pour les nouveaux joueurs
+        if (!userSnap.exists()) {
+            await setDoc(userRef, {
+                name: user.displayName,
+                balance: 0,
+                lastClaimDate: null
+            });
+            updateBalanceDisplays(0);
+        } else {
+            updateBalanceDisplays(userSnap.data().balance);
+        }
+        
         initReels(); updatePaytable();
     } else {
         document.getElementById('login-section').classList.remove('hidden');
@@ -183,15 +192,27 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
+// --- BONUS QUOTIDIEN SÉCURISÉ ---
 document.getElementById('btn-claim-bonus').addEventListener('click', async () => {
     const user = auth.currentUser;
+    if (!user) return;
+    
     const userRef = doc(db, "users", user.uid);
     const userSnap = await getDoc(userRef);
+    
+    if (!userSnap.exists()) return; // Double sécurité
+    
     const today = new Date().toISOString().split('T')[0];
+    const bonusMsg = document.getElementById('bonus-message');
+    
     if (userSnap.data().lastClaimDate !== today) {
         updateBalanceDisplays(currentBalance + 2500);
         await updateDoc(userRef, { balance: currentBalance, lastClaimDate: today });
-        document.getElementById('bonus-message').textContent = "Jackpot ! +2500 Brundles.";
+        bonusMsg.textContent = "Jackpot ! +2500 Brundles.";
+        bonusMsg.style.color = "#2ecc71";
+    } else {
+        bonusMsg.textContent = "Tu as déjà récupéré tes Brundles aujourd'hui !";
+        bonusMsg.style.color = "#e74c3c";
     }
 });
 
