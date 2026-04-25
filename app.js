@@ -20,7 +20,7 @@ const provider = new GoogleAuthProvider();
 const balanceDisplayLobby = document.getElementById('brundle-balance');
 let currentBalance = 0;
 
-// MACHINE A SOUS
+// SLOT
 const slotSection = document.getElementById('slot-section');
 const balanceDisplaySlot = document.getElementById('slot-brundle-balance');
 const btnSpinSlot = document.getElementById('btn-spin');
@@ -32,7 +32,6 @@ const paytableContent = document.getElementById('paytable-content');
 const bigWinOverlay = document.getElementById('big-win-overlay');
 const bigWinAmount = document.getElementById('big-win-amount');
 const winDisplayContent = document.getElementById('win-display-content');
-const winDisplaySection = document.getElementById('win-display-section');
 const autoSpinCountSelect = document.getElementById('auto-spin-count');
 const btnAutoSpin = document.getElementById('btn-auto-spin');
 const btnStopAuto = document.getElementById('btn-stop-auto');
@@ -43,9 +42,10 @@ const balanceDisplayRoulette = document.getElementById('roulette-brundle-balance
 const rouletteBoard = document.getElementById('roulette-board');
 const btnSpinRoulette = document.getElementById('btn-spin-roulette');
 const btnClearRoulette = document.getElementById('btn-clear-roulette');
-const rouletteResultDisplay = document.getElementById('roulette-result');
-const rouletteNumberSpan = document.getElementById('roulette-number');
 const rouletteMessage = document.getElementById('roulette-message');
+const wheelEl = document.getElementById('roulette-wheel');
+const winnerTextEl = document.getElementById('roulette-winner-text');
+const historyEl = document.getElementById('roulette-history');
 
 let freeSpins = 0;
 let isSpinningSlot = false;
@@ -55,10 +55,12 @@ let winLineTimer = null;
 
 // Variables Roulette
 let selectedChipValue = 10;
-let rouletteBets = {}; // Format: { "32": 50, "red": 100, "even": 10 }
+let rouletteBets = {}; 
 let totalRouletteBet = 0;
 let isRouletteSpinning = false;
+let currentWheelRotation = 0;
 
+const AMERICAN_WHEEL_ORDER = ['0', '28', '9', '26', '30', '11', '7', '20', '32', '17', '5', '22', '34', '15', '3', '24', '36', '13', '1', '00', '27', '10', '25', '29', '12', '8', '19', '31', '18', '6', '21', '33', '16', '4', '23', '35', '14', '2'];
 const RED_NUMS = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
 
 // --- GESTION DU SOLDE ---
@@ -96,97 +98,135 @@ function playSound(type) {
         osc.type = 'square'; osc.frequency.setValueAtTime(300, t); osc.frequency.setValueAtTime(450, t + 0.1); osc.frequency.setValueAtTime(600, t + 0.2); osc.frequency.setValueAtTime(900, t + 0.3);
         gain.gain.setValueAtTime(0.1, t); gain.gain.linearRampToValueAtTime(0, t + 0.6);
         osc.start(t); osc.stop(t + 0.6);
-    } else if (type === 'roulette-tick') {
-        osc.type = 'triangle'; osc.frequency.setValueAtTime(800, t);
-        gain.gain.setValueAtTime(0.1, t); gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
-        osc.start(t); osc.stop(t + 0.05);
     }
 }
 
 // ==========================================
-// ROULETTE LOGIC
+// ROULETTE LOGIC & ANIMATION
 // ==========================================
 
-function initRouletteBoard() {
-    let html = `<div class="r-cell r-green r-0" data-bet="0">0</div>`;
-    
-    // Générer les numéros 1 à 36 pour la grille CSS
-    for (let col = 1; col <= 12; col++) {
-        const n3 = col * 3;
-        const n2 = col * 3 - 1;
-        const n1 = col * 3 - 2;
-        
-        html += `<div class="r-cell ${RED_NUMS.includes(n3) ? 'r-red' : 'r-black'}" style="grid-row: 1; grid-column: ${col+1};" data-bet="${n3}">${n3}</div>`;
-        html += `<div class="r-cell ${RED_NUMS.includes(n2) ? 'r-red' : 'r-black'}" style="grid-row: 2; grid-column: ${col+1};" data-bet="${n2}">${n2}</div>`;
-        html += `<div class="r-cell ${RED_NUMS.includes(n1) ? 'r-red' : 'r-black'}" style="grid-row: 3; grid-column: ${col+1};" data-bet="${n1}">${n1}</div>`;
-    }
-
-    // Paris extérieurs
-    html += `
-        <div class="r-cell r-special r-1st12" data-bet="1st12">1st 12</div>
-        <div class="r-cell r-special r-2nd12" data-bet="2nd12">2nd 12</div>
-        <div class="r-cell r-special r-3rd12" data-bet="3rd12">3rd 12</div>
-        
-        <div class="r-cell r-special r-1to18" data-bet="1to18">1 to 18</div>
-        <div class="r-cell r-special r-even" data-bet="even">EVEN</div>
-        <div class="r-cell r-red-bet" data-bet="red">RED</div>
-        <div class="r-cell r-black-bet" data-bet="black">BLACK</div>
-        <div class="r-cell r-special r-odd" data-bet="odd">ODD</div>
-        <div class="r-cell r-special r-19to36" data-bet="19to36">19 to 36</div>
-    `;
-    
-    rouletteBoard.innerHTML = html;
-
-    // Ajouter les events de clic pour miser
-    document.querySelectorAll('.r-cell').forEach(cell => {
-        cell.addEventListener('click', (e) => {
-            if (isRouletteSpinning) return;
-            initAudio();
-            const betType = e.target.dataset.bet;
-            if (!betType) return;
-            
-            // Vérifier les fonds
-            if (currentBalance < selectedChipValue) {
-                rouletteMessage.textContent = "Fonds insuffisants pour ce jeton !";
-                rouletteMessage.style.color = "#e74c3c";
-                return;
-            }
-
-            // Ajouter la mise
-            if (!rouletteBets[betType]) rouletteBets[betType] = 0;
-            rouletteBets[betType] += selectedChipValue;
-            totalRouletteBet += selectedChipValue;
-            
-            updateBalanceDisplays(currentBalance - selectedChipValue);
-            updateRouletteSpinButton();
-            
-            // Afficher le jeton visuellement
-            let chipEl = e.target.querySelector('.placed-chip');
-            if (!chipEl) {
-                chipEl = document.createElement('div');
-                chipEl.className = 'placed-chip';
-                e.target.appendChild(chipEl);
-            }
-            chipEl.textContent = formatChipValue(rouletteBets[betType]);
-            
-            rouletteMessage.textContent = "Faites vos jeux...";
-            rouletteMessage.style.color = "#aaa";
-            playSound('spin'); // Petit son de clic
-        });
+function initRouletteWheel() {
+    wheelEl.innerHTML = '';
+    const segmentAngle = 360 / 38;
+    AMERICAN_WHEEL_ORDER.forEach((num, index) => {
+        let colorClass = 'pocket-black';
+        if (num === '0' || num === '00') colorClass = 'pocket-green';
+        else if (RED_NUMS.includes(parseInt(num))) colorClass = 'pocket-red';
+        let pocket = document.createElement('div');
+        pocket.className = `wheel-pocket ${colorClass}`;
+        pocket.style.transform = `rotate(${index * segmentAngle}deg)`;
+        pocket.textContent = num;
+        wheelEl.appendChild(pocket);
     });
 }
 
-function formatChipValue(val) {
-    if(val >= 1000) return (val/1000) + 'k';
-    return val;
+function initRouletteBoard() {
+    let html = `
+        <div class="zero-column">
+            <div class="r-cell r-green r-0" data-bet="0">0</div>
+            <div class="r-cell r-green r-00" data-bet="00">00</div>
+        </div>
+        <div class="main-grid">
+    `;
+    
+    for (let col = 1; col <= 12; col++) {
+        const n3 = col * 3; const n2 = col * 3 - 1; const n1 = col * 3 - 2;
+        
+        // Fonction pour injecter les cibles de paris complexes (Chevaux et Carrés)
+        const getTargets = (n, r, c) => {
+            let t = '';
+            if (r > 1) t += `<div class="bet-target split-v" data-bet="${n},${n+1}"></div>`;
+            if (c < 12) t += `<div class="bet-target split-h" data-bet="${n},${n+3}"></div>`;
+            if (r > 1 && c < 12) t += `<div class="bet-target corner" data-bet="${n},${n+1},${n+3},${n+4}"></div>`;
+            return t;
+        };
+
+        html += `<div class="r-cell ${RED_NUMS.includes(n3) ? 'r-red' : 'r-black'}" style="grid-row: 1; grid-column: ${col};" data-bet="${n3}">${n3}${getTargets(n3, 1, col)}</div>`;
+        html += `<div class="r-cell ${RED_NUMS.includes(n2) ? 'r-red' : 'r-black'}" style="grid-row: 2; grid-column: ${col};" data-bet="${n2}">${n2}${getTargets(n2, 2, col)}</div>`;
+        html += `<div class="r-cell ${RED_NUMS.includes(n1) ? 'r-red' : 'r-black'}" style="grid-row: 3; grid-column: ${col};" data-bet="${n1}">${n1}${getTargets(n1, 3, col)}</div>`;
+    }
+
+    html += `
+            <div class="r-cell r-special r-1st12" data-bet="1st12">1st 12</div>
+            <div class="r-cell r-special r-2nd12" data-bet="2nd12">2nd 12</div>
+            <div class="r-cell r-special r-3rd12" data-bet="3rd12">3rd 12</div>
+            <div class="r-cell r-special r-1to18" data-bet="1to18">1 to 18</div>
+            <div class="r-cell r-special r-even" data-bet="even">EVEN</div>
+            <div class="r-cell r-red-bet" data-bet="red">RED</div>
+            <div class="r-cell r-black-bet" data-bet="black">BLACK</div>
+            <div class="r-cell r-special r-odd" data-bet="odd">ODD</div>
+            <div class="r-cell r-special r-19to36" data-bet="19to36">19 to 36</div>
+        </div>
+    `;
+    rouletteBoard.innerHTML = html;
+
+    // GESTION DU CLIC GAUCHE (Poser) ET CLIC DROIT (Retirer)
+    rouletteBoard.addEventListener('click', handleBet);
+    rouletteBoard.addEventListener('contextmenu', (e) => {
+        e.preventDefault(); // Empêche le menu Windows d'apparaître
+        handleBet(e, true);
+    });
 }
 
+function handleBet(e, isRemoving = false) {
+    if (isRouletteSpinning) return;
+    const target = e.target.closest('[data-bet]');
+    if (!target) return;
+    
+    initAudio();
+    const betType = target.dataset.bet;
+    
+    if (isRemoving) {
+        if (!rouletteBets[betType] || rouletteBets[betType] <= 0) return; // Rien à enlever
+        
+        let amountToRemove = Math.min(selectedChipValue, rouletteBets[betType]);
+        rouletteBets[betType] -= amountToRemove;
+        totalRouletteBet -= amountToRemove;
+        updateBalanceDisplays(currentBalance + amountToRemove);
+        
+        if (rouletteBets[betType] <= 0) {
+            delete rouletteBets[betType];
+            let chip = target.querySelector('.placed-chip');
+            if(chip) chip.remove();
+        } else {
+            target.querySelector('.placed-chip').textContent = formatChipValue(rouletteBets[betType]);
+        }
+        playSound('spin');
+    } else {
+        // Ajout classique
+        if (currentBalance < selectedChipValue) {
+            rouletteMessage.textContent = "Fonds insuffisants !";
+            rouletteMessage.style.color = "#e74c3c";
+            return;
+        }
+
+        if (!rouletteBets[betType]) rouletteBets[betType] = 0;
+        rouletteBets[betType] += selectedChipValue;
+        totalRouletteBet += selectedChipValue;
+        updateBalanceDisplays(currentBalance - selectedChipValue);
+        
+        let chipEl = target.querySelector('.placed-chip');
+        if (!chipEl) {
+            chipEl = document.createElement('div');
+            chipEl.className = 'placed-chip';
+            target.appendChild(chipEl);
+        }
+        chipEl.textContent = formatChipValue(rouletteBets[betType]);
+        playSound('spin');
+    }
+    
+    updateRouletteSpinButton();
+    rouletteMessage.textContent = "Faites vos jeux... (Clic Droit pour retirer)";
+    rouletteMessage.style.color = "#aaa";
+}
+
+function formatChipValue(val) { return val >= 1000 ? (val/1000) + 'k' : val; }
+
 function updateRouletteSpinButton() {
-    btnSpinRoulette.innerHTML = `LANCER LA BILLE ! <br><span style="font-size:0.7em;">(Mise totale : ${totalRouletteBet})</span>`;
+    btnSpinRoulette.innerHTML = `LANCER LA BILLE ! <br><span style="font-size:0.7em;">(Mise : ${totalRouletteBet})</span>`;
     btnClearRoulette.textContent = `Annuler (${totalRouletteBet})`;
 }
 
-// Sélection des jetons
 document.querySelectorAll('.chip').forEach(chip => {
     chip.addEventListener('click', (e) => {
         document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
@@ -195,18 +235,14 @@ document.querySelectorAll('.chip').forEach(chip => {
     });
 });
 
-// Annuler paris
 btnClearRoulette.addEventListener('click', () => {
     if (isRouletteSpinning || totalRouletteBet === 0) return;
     updateBalanceDisplays(currentBalance + totalRouletteBet);
-    rouletteBets = {};
-    totalRouletteBet = 0;
-    updateRouletteSpinButton();
+    rouletteBets = {}; totalRouletteBet = 0; updateRouletteSpinButton();
     document.querySelectorAll('.placed-chip').forEach(c => c.remove());
     rouletteMessage.textContent = "Paris annulés.";
 });
 
-// Lancer la Roulette
 btnSpinRoulette.addEventListener('click', async () => {
     initAudio();
     if (isRouletteSpinning) return;
@@ -217,61 +253,71 @@ btnSpinRoulette.addEventListener('click', async () => {
     }
 
     isRouletteSpinning = true;
-    btnSpinRoulette.disabled = true;
-    btnClearRoulette.disabled = true;
-    rouletteMessage.textContent = "Rien ne va plus !";
-    rouletteMessage.style.color = "#fff";
+    btnSpinRoulette.disabled = true; btnClearRoulette.disabled = true;
+    rouletteMessage.textContent = "Rien ne va plus !"; rouletteMessage.style.color = "#fff";
+    winnerTextEl.textContent = "";
+
+    let rng = Math.floor(Math.random() * 38);
+    let winningString = rng === 37 ? '00' : rng.toString();
     
-    rouletteResultDisplay.className = 'roulette-result-display'; // Reset color
+    const segmentAngle = 360 / 38;
+    const winningIndex = AMERICAN_WHEEL_ORDER.indexOf(winningString);
+    const targetRotation = currentWheelRotation + (360 * 5) - (currentWheelRotation % 360) - (winningIndex * segmentAngle);
+    currentWheelRotation = targetRotation;
+    
+    wheelEl.style.transform = `rotate(${currentWheelRotation}deg)`;
 
-    // L'animation du tirage (Défilement des numéros)
-    let spins = 0;
-    let maxSpins = 30; // Nombre de "bonds" avant de s'arrêter
-    let finalNumber = Math.floor(Math.random() * 37); // 0 à 36
-
-    let spinInterval = setInterval(() => {
-        let tempNum = Math.floor(Math.random() * 37);
-        rouletteNumberSpan.textContent = tempNum;
-        playSound('roulette-tick');
-        spins++;
-
-        if (spins >= maxSpins) {
-            clearInterval(spinInterval);
-            finishRouletteSpin(finalNumber);
-        }
-    }, 100); // 100ms entre chaque numéro
+    setTimeout(() => { finishRouletteSpin(winningString); }, 5100);
 });
 
-async function finishRouletteSpin(winningNumber) {
+async function finishRouletteSpin(winningString) {
     const user = auth.currentUser;
+    winnerTextEl.textContent = winningString;
     
-    // Affichage visuel du résultat
-    rouletteNumberSpan.textContent = winningNumber;
-    if (winningNumber === 0) rouletteResultDisplay.classList.add('res-green');
-    else if (RED_NUMS.includes(winningNumber)) rouletteResultDisplay.classList.add('res-red');
-    else rouletteResultDisplay.classList.add('res-black');
+    let isGreen = winningString === '0' || winningString === '00';
+    let isRed = !isGreen && RED_NUMS.includes(parseInt(winningString));
+    
+    if (isGreen) winnerTextEl.style.color = "#2ecc71";
+    else if (isRed) winnerTextEl.style.color = "#e74c3c";
+    else winnerTextEl.style.color = "#bdc3c7"; 
+
+    // Ajout à l'historique
+    const histItem = document.createElement('div');
+    histItem.className = `hist-item ${isGreen ? 'pocket-green' : (isRed ? 'pocket-red' : 'pocket-black')}`;
+    histItem.textContent = winningString;
+    historyEl.prepend(histItem);
+    if(historyEl.children.length > 10) historyEl.lastChild.remove();
 
     playSound('stop');
 
-    // Calcul des gains
     let winAmount = 0;
+    let winNum = parseInt(winningString);
 
     for (const [betType, amount] of Object.entries(rouletteBets)) {
-        // Numéro plein (36x la mise)
-        if (betType == winningNumber) winAmount += amount * 36;
-        
-        if (winningNumber !== 0) { // Les paris extérieurs perdent sur 0
-            if (betType === 'red' && RED_NUMS.includes(winningNumber)) winAmount += amount * 2;
-            if (betType === 'black' && !RED_NUMS.includes(winningNumber)) winAmount += amount * 2;
-            if (betType === 'even' && winningNumber % 2 === 0) winAmount += amount * 2;
-            if (betType === 'odd' && winningNumber % 2 !== 0) winAmount += amount * 2;
-            if (betType === '1to18' && winningNumber >= 1 && winningNumber <= 18) winAmount += amount * 2;
-            if (betType === '19to36' && winningNumber >= 19 && winningNumber <= 36) winAmount += amount * 2;
+        if (betType.includes(',')) {
+            // Mises complexes (Cheval x18, Carré x9)
+            const nums = betType.split(',');
+            if (nums.includes(winningString)) {
+                if (nums.length === 2) winAmount += amount * 18;
+                if (nums.length === 4) winAmount += amount * 9;
+            }
+        } else {
+            // Numéro plein
+            if (betType === winningString) winAmount += amount * 36; 
             
-            // Douzaines (3x la mise)
-            if (betType === '1st12' && winningNumber >= 1 && winningNumber <= 12) winAmount += amount * 3;
-            if (betType === '2nd12' && winningNumber >= 13 && winningNumber <= 24) winAmount += amount * 3;
-            if (betType === '3rd12' && winningNumber >= 25 && winningNumber <= 36) winAmount += amount * 3;
+            // Paris extérieurs
+            if (!isGreen) {
+                if (betType === 'red' && isRed) winAmount += amount * 2;
+                if (betType === 'black' && !isRed) winAmount += amount * 2;
+                if (betType === 'even' && winNum % 2 === 0) winAmount += amount * 2;
+                if (betType === 'odd' && winNum % 2 !== 0) winAmount += amount * 2;
+                if (betType === '1to18' && winNum >= 1 && winNum <= 18) winAmount += amount * 2;
+                if (betType === '19to36' && winNum >= 19 && winNum <= 36) winAmount += amount * 2;
+                
+                if (betType === '1st12' && winNum >= 1 && winNum <= 12) winAmount += amount * 3;
+                if (betType === '2nd12' && winNum >= 13 && winNum <= 24) winAmount += amount * 3;
+                if (betType === '3rd12' && winNum >= 25 && winNum <= 36) winAmount += amount * 3;
+            }
         }
     }
 
@@ -285,20 +331,12 @@ async function finishRouletteSpin(winningNumber) {
         rouletteMessage.style.color = "#e74c3c";
     }
 
-    // Sauvegarde en BDD
     await updateDoc(doc(db, "users", user.uid), { balance: currentBalance });
 
-    // Reset pour le prochain tour
-    rouletteBets = {};
-    totalRouletteBet = 0;
-    updateRouletteSpinButton();
+    rouletteBets = {}; totalRouletteBet = 0; updateRouletteSpinButton();
     document.querySelectorAll('.placed-chip').forEach(c => c.remove());
-    
-    isRouletteSpinning = false;
-    btnSpinRoulette.disabled = false;
-    btnClearRoulette.disabled = false;
+    isRouletteSpinning = false; btnSpinRoulette.disabled = false; btnClearRoulette.disabled = false;
 }
-
 
 // ==========================================
 // SLOT MACHINE LOGIC (Inchangé)
@@ -355,16 +393,6 @@ document.querySelectorAll('.btn-bet').forEach(btn => {
 });
 betAmountInput.addEventListener('input', updatePaytable);
 
-window.addEventListener('keydown', (e) => {
-    if (e.code === 'Space') {
-        if(!slotSection.classList.contains('hidden') && !btnSpinSlot.disabled && !isSpinningSlot) {
-            e.preventDefault(); btnSpinSlot.click();
-        } else if (!rouletteSection.classList.contains('hidden') && !btnSpinRoulette.disabled && !isRouletteSpinning) {
-            e.preventDefault(); btnSpinRoulette.click();
-        }
-    }
-});
-
 function initReels() {
     for(let col = 0; col < 5; col++) {
         let html = '';
@@ -377,9 +405,6 @@ function initReels() {
 }
 
 // --- FIREBASE GLOBAL ---
-document.getElementById('btn-google-login').addEventListener('click', () => signInWithPopup(auth, provider));
-document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
-
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         document.getElementById('login-section').classList.add('hidden');
@@ -393,7 +418,8 @@ onAuthStateChanged(auth, async (user) => {
         } else {
             updateBalanceDisplays(userSnap.data().balance);
         }
-        initReels(); updatePaytable(); initRouletteBoard();
+        initReels(); updatePaytable(); 
+        initRouletteWheel(); initRouletteBoard(); 
     } else {
         document.getElementById('login-section').classList.remove('hidden');
         document.getElementById('casino-section').classList.add('hidden');
@@ -402,30 +428,13 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-document.getElementById('btn-claim-bonus').addEventListener('click', async () => {
-    const user = auth.currentUser;
-    if (!user) return;
-    const userRef = doc(db, "users", user.uid);
-    const userSnap = await getDoc(userRef);
-    const today = new Date().toISOString().split('T')[0];
-    if (userSnap.data().lastClaimDate !== today) {
-        updateBalanceDisplays(currentBalance + 2500);
-        await updateDoc(userRef, { balance: currentBalance, lastClaimDate: today });
-        document.getElementById('bonus-message').textContent = "Jackpot ! +2500 Brundles.";
-        document.getElementById('bonus-message').style.color = "#2ecc71";
-    }
-});
-
 // NAVIGATION
 document.getElementById('btn-open-slot').addEventListener('click', () => { document.getElementById('casino-section').classList.add('hidden'); slotSection.classList.remove('hidden'); });
 document.getElementById('btn-open-roulette').addEventListener('click', () => { document.getElementById('casino-section').classList.add('hidden'); rouletteSection.classList.remove('hidden'); });
-
 document.querySelectorAll('.btn-back-lobby').forEach(btn => {
     btn.addEventListener('click', () => {
-        slotSection.classList.add('hidden');
-        rouletteSection.classList.add('hidden');
-        document.getElementById('casino-section').classList.remove('hidden');
-        stopAutoSpin();
+        slotSection.classList.add('hidden'); rouletteSection.classList.add('hidden');
+        document.getElementById('casino-section').classList.remove('hidden'); stopAutoSpin();
     });
 });
 
@@ -462,7 +471,6 @@ btnAutoSpin.addEventListener('click', () => {
 });
 btnStopAuto.addEventListener('click', stopAutoSpin);
 function stopAutoSpin() { isAutoSpinning = false; autoSpinsRemaining = 0; btnAutoSpin.classList.remove('hidden'); btnStopAuto.classList.add('hidden'); }
-
 btnSpinSlot.addEventListener('click', () => { initAudio(); stopAutoSpin(); if (!isSpinningSlot) triggerSpinSlot(); });
 
 // --- MOTEUR SLOT ---
@@ -481,15 +489,10 @@ async function triggerSpinSlot() {
     
     clearTimeout(winLineTimer); resetSymbolsVisuals();
 
-    if (freeSpins > 0) {
-        fsMessage.textContent = `🎰 FREE SPINS : IL T'EN RESTE ${freeSpins} ! (GAINS X2)`;
-    } else {
-        updateBalanceDisplays(currentBalance - bet);
-        fsMessage.textContent = "";
-    }
+    if (freeSpins > 0) { fsMessage.textContent = `🎰 FREE SPINS : IL T'EN RESTE ${freeSpins} ! (GAINS X2)`; } 
+    else { updateBalanceDisplays(currentBalance - bet); fsMessage.textContent = ""; }
     
-    slotMessage.textContent = "Ça tourne...";
-    slotMessage.style.color = "white";
+    slotMessage.textContent = "Ça tourne..."; slotMessage.style.color = "white";
 
     const finalGrid = [[], [], [], [], []];
     for (let col = 0; col < 5; col++) {

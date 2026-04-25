@@ -43,13 +43,19 @@
         <div class="slot-layout">
             <div class="left-column">
                 <button class="btn-back-lobby btn-small" style="margin-bottom: 15px; display: block; width: 100%; padding: 10px;">⬅ Retour au Lobby</button>
-                <div id="win-display-section" class="paytable-section hidden" style="margin-bottom: 15px; border-color: #2ecc71;">
-                    <h3 style="color: #2ecc71;">Lignes Gagnantes</h3>
-                    <div id="win-display-content" class="win-display-scroll"></div>
-                </div>
                 <div class="paytable-section">
                     <h3>Gains (Mise: <span id="pt-bet-display">50</span>)</h3>
                     <div id="paytable-content" class="paytable-grid"></div>
+                    <div class="paytable-rules">
+                        <div class="special-symbol-rule">
+                            <img src="slot_symbols/slot_wild.png" class="paytable-sym">
+                            <p><b>WILD :</b> Remplace tout (sauf Scatter).</p>
+                        </div>
+                        <div class="special-symbol-rule">
+                            <img src="slot_symbols/slot_chbk.png" class="paytable-sym">
+                            <p><b>SCATTER :</b> 3=10FS | 4=20FS | 5=30FS</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -111,6 +117,15 @@
                     <p id="slot-message" class="slot-msg">Prêt à tenter ta chance ?</p>
                 </div>
             </div>
+
+            <div class="right-column">
+                <div id="win-display-section" class="paytable-section" style="border-color: #2ecc71; min-height: 400px;">
+                    <h3 style="color: #2ecc71;">Lignes Gagnantes</h3>
+                    <div id="win-display-content" class="win-display-scroll">
+                        <p class="empty-win-msg">En attente d'un gain...</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -118,18 +133,27 @@
         <button class="btn-back-lobby btn-small" style="margin-bottom: 20px;">⬅ Retour au Lobby</button>
         
         <div class="roulette-layout">
-            <div class="slot-header" style="max-width: 800px; margin: 0 auto 15px auto;">
-                <h2>CHBK Roulette</h2>
+            <div class="slot-header" style="max-width: 900px; margin: 0 auto 15px auto;">
+                <h2>CHBK Roulette (Américaine)</h2>
                 <div class="live-balance" style="background: #27ae60;">Solde : <span id="roulette-brundle-balance">...</span></div>
             </div>
 
             <div class="roulette-game-area">
-                <div class="roulette-result-display" id="roulette-result">
-                    <span id="roulette-number">?</span>
+                
+                <div class="roulette-wheel-wrapper">
+                    <div class="wheel-pointer"></div>
+                    <div id="roulette-wheel" class="roulette-wheel"></div>
+                    <div class="wheel-center"><span id="roulette-winner-text"></span></div>
                 </div>
-                <p id="roulette-message" style="font-weight: bold; margin-bottom: 20px; color: #aaa;">Faites vos jeux...</p>
 
-                <div class="roulette-table" id="roulette-board">
+                <div class="roulette-history-container">
+                    <span style="color:#aaa; font-size:0.9em; margin-right:10px;">Derniers tirages:</span>
+                    <div id="roulette-history" class="roulette-history"></div>
+                </div>
+
+                <p id="roulette-message" style="font-weight: bold; margin-bottom: 20px; color: #aaa; font-size: 1.2em;">Faites vos jeux... (Clic Droit pour retirer un jeton)</p>
+
+                <div class="roulette-table-wrapper" id="roulette-board">
                     </div>
 
                 <div class="roulette-controls">
@@ -149,6 +173,6 @@
         </div>
     </div>
 
-    <script type="module" src="app.js?v=22"></script>
+    <script type="module" src="app.js?v=24"></script>
 </body>
 </html>
