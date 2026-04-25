@@ -45,12 +45,6 @@
             <div class="left-column">
                 <button id="btn-back-lobby" class="btn-small" style="margin-bottom: 15px; display: block; width: 100%; padding: 10px;">⬅ Retour au Lobby</button>
                 
-                <div id="win-display-section" class="paytable-section hidden" style="margin-bottom: 15px; border-color: #2ecc71;">
-                    <h3 style="color: #2ecc71;">Lignes Gagnantes</h3>
-                    <div id="win-display-content" class="win-display-scroll">
-                        </div>
-                </div>
-
                 <div class="paytable-section">
                     <h3>Gains (Mise: <span id="pt-bet-display">50</span>)</h3>
                     <div id="paytable-content" class="paytable-grid"></div>
@@ -131,9 +125,19 @@
                     <p id="slot-message" class="slot-msg">Prêt à tenter ta chance ?</p>
                 </div>
             </div>
+
+            <div class="right-column">
+                <div id="win-display-section" class="paytable-section" style="border-color: #2ecc71; min-height: 400px;">
+                    <h3 style="color: #2ecc71;">Lignes Gagnantes</h3>
+                    <div id="win-display-content" class="win-display-scroll">
+                        <p class="empty-win-msg">En attente d'un gain...</p>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
-    <script type="module" src="app.js?v=19"></script>
+    <script type="module" src="app.js?v=20"></script>
 </body>
 </html>

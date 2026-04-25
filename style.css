@@ -15,9 +15,11 @@ input, select { padding: 8px; border-radius: 5px; border: none; background-color
 .active-game { background-color: #9b59b6; color: white; cursor: pointer; border: 2px solid #8e44ad; }
 .active-game:hover { background-color: #8e44ad; }
 
-/* --- SLOT LAYOUT --- */
+/* --- SLOT LAYOUT (3 Colonnes maintenant) --- */
 .slot-layout { display: flex; justify-content: center; align-items: flex-start; gap: 30px; flex-wrap: wrap; margin-top: 20px; }
 .left-column { display: flex; flex-direction: column; width: 280px; }
+.right-column { display: flex; flex-direction: column; width: 280px; }
+
 .paytable-section { background-color: #1a1a1a; padding: 15px; border-radius: 10px; border: 2px solid #555; width: 100%; box-sizing: border-box; text-align: left; }
 .paytable-section h3 { margin-top: 0; color: #f1c40f; text-align: center; border-bottom: 1px solid #333; padding-bottom: 10px;}
 .paytable-grid { display: flex; flex-direction: column; gap: 8px; }
@@ -29,7 +31,7 @@ input, select { padding: 8px; border-radius: 5px; border: none; background-color
 .special-symbol-rule p { margin: 0; flex: 1; }
 
 /* NOUVEAU : MINI GRILLES DE GAINS */
-.win-display-scroll { display: flex; flex-direction: column; gap: 10px; max-height: 250px; overflow-y: auto; padding-right: 5px; }
+.win-display-scroll { display: flex; flex-direction: column; gap: 10px; max-height: 450px; overflow-y: auto; padding-right: 5px; }
 .win-display-scroll::-webkit-scrollbar { width: 5px; }
 .win-display-scroll::-webkit-scrollbar-thumb { background: #555; border-radius: 5px; }
 .win-line-box { background: #111; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #333; }
@@ -37,6 +39,7 @@ input, select { padding: 8px; border-radius: 5px; border: none; background-color
 .mini-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; max-width: 120px; margin: 0 auto; }
 .mini-dot { aspect-ratio: 1; background: #222; border-radius: 3px; }
 .mini-dot.active { background: #f1c40f; box-shadow: 0 0 5px #f1c40f; }
+.empty-win-msg { color: #555; font-style: italic; text-align: center; margin-top: 20px; }
 
 /* DARK THEME MACHINE */
 .slot-machine-wrapper { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 500px; }
