@@ -44,16 +44,22 @@
         
         <div class="slot-layout">
             <div class="paytable-section">
-                <h3>Gains (Mise : <span id="pt-bet-display">50</span>)</h3>
+                <h3>Gains (Mise: <span id="pt-bet-display">50</span>)</h3>
                 <div id="paytable-content" class="paytable-grid"></div>
                 <div class="paytable-rules">
-                    <p><b>WILD</b> remplace tout (sauf Scatter).</p>
-                    <p><b>SCATTER :</b> 3 = 10 FS | 4 = 20 FS | 5 = 30 FS<br>(Gains X2 pendant les FS)</p>
+                    <div class="special-symbol-rule">
+                        <img src="slot_symbols/slot_wild.png" class="paytable-sym">
+                        <p><b>WILD :</b> Remplace tout (sauf Scatter).</p>
+                    </div>
+                    <div class="special-symbol-rule">
+                        <img src="slot_symbols/slot_chbk.png" class="paytable-sym">
+                        <p><b>CHBK SCATTER :</b> <br>3 = 10 FS | 4 = 20 FS | 5 = 30 FS<br>(Gains de base X2 en Free Spins)</p>
+                    </div>
                 </div>
             </div>
 
             <div class="slot-machine-wrapper">
-                <h2>CHBK Slot (243 Ways)</h2>
+                <h2>CHBK Slot (25 Lignes)</h2>
                 <div class="slot-machine dark-theme">
                     
                     <div class="slot-window" id="slot-window">
@@ -71,6 +77,7 @@
                             <label for="bet-amount">Mise :</label>
                             <input type="number" id="bet-amount" value="50" min="10" step="10">
                         </div>
+                        
                         <button id="btn-spin" class="btn spin-btn">JOUER</button>
                         
                         <div class="control-group auto-spin-group">
@@ -91,6 +98,6 @@
         </div>
     </div>
 
-    <script type="module" src="app.js?v=5"></script>
+    <script type="module" src="app.js?v=8"></script>
 </body>
 </html>
