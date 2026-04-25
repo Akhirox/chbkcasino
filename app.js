@@ -26,7 +26,6 @@ const ptBetDisplay = document.getElementById('pt-bet-display');
 const paytableContent = document.getElementById('paytable-content');
 const winLinesSvg = document.getElementById('win-lines-svg');
 
-// Boutons Auto
 const autoSpinCountSelect = document.getElementById('auto-spin-count');
 const btnAutoSpin = document.getElementById('btn-auto-spin');
 const btnStopAuto = document.getElementById('btn-stop-auto');
@@ -53,14 +52,12 @@ const SYM_CONFIG = {
     scatter: { file: 'slot_chbk.png',    payout: [0, 0, 0],   color: '#e74c3c' } 
 };
 
-// Bande RTP 98% (Très généreuse en fruits et Wilds)
 const reelTape = [
     'cherry','cherry','cherry', 'lemon','lemon','lemon', 'orange','orange','orange',
     'grapes','grapes', 'prunes','prunes', 'star','star', 'bell','bell', 
     'diamond', 's67', 'wild','wild','wild', 'scatter','scatter'
 ];
 
-// --- MISE À JOUR DU TABLEAU DES GAINS ---
 function updatePaytable() {
     const bet = parseInt(betAmountInput.value) || 0;
     ptBetDisplay.textContent = bet;
@@ -78,7 +75,6 @@ function updatePaytable() {
 }
 betAmountInput.addEventListener('input', updatePaytable);
 
-// --- INITIALISATION ---
 function initReels() {
     for(let col = 0; col < 5; col++) {
         let html = '';
@@ -90,7 +86,6 @@ function initReels() {
     }
 }
 
-// --- CONNEXION & LOBBY ---
 document.getElementById('btn-google-login').addEventListener('click', () => signInWithPopup(auth, provider));
 document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
 
@@ -128,21 +123,41 @@ document.getElementById('btn-back-lobby').addEventListener('click', () => { docu
 
 // --- GESTION DES LIGNES GAGNANTES (SVG) ---
 function getSymbolCenter(col, row) {
-    // Calcul exact basé sur le CSS : padding 10px, gap 10px, symboles 80x80
-    const x = 10 + (col * 80) + (col * 10) + 40; // padding-left + cols_before + gaps_before + half_width
-    const y = 10 + (row * 80) + 40; // padding-top + rows_before + half_height
+    const x = 10 + (col * 80) + (col * 10) + 40; 
+    const y = 10 + (row * 80) + 40; 
     return { x, y };
 }
 
 function drawWinningPaths(paths, color) {
-    winLinesSvg.innerHTML = ''; // Nettoyer
+    // 1. Nettoyage total et correct de l'SVG
+    while (winLinesSvg.firstChild) { winLinesSvg.removeChild(winLinesSvg.firstChild); }
+    
+    // 2. Assombrir tous les symboles avant d'illuminer la nouvelle ligne
+    for(let c=0; c<5; c++) {
+        for(let r=0; r<3; r++) {
+            const el = document.getElementById(`sym-${c}-${r}`);
+            if (el) { el.classList.remove('winning-sym'); el.classList.add('dimmed'); }
+        }
+    }
+
+    // 3. Dessiner les lignes et illuminer les gagnants
     paths.forEach(path => {
         let points = path.map(p => `${getSymbolCenter(p.col, p.row).x},${getSymbolCenter(p.col, p.row).y}`).join(' ');
-        winLinesSvg.innerHTML += `<polyline class="win-line" points="${points}" stroke="${color}" stroke-width="6" />`;
-        // Mettre en évidence les symboles de ce chemin
+        
+        // Création d'une balise polyline reconnue comme du vrai SVG
+        let polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+        polyline.setAttribute('class', 'win-line');
+        polyline.setAttribute('points', points);
+        polyline.setAttribute('stroke', color);
+        polyline.setAttribute('stroke-width', '6');
+        winLinesSvg.appendChild(polyline);
+
         path.forEach(p => {
             const symEl = document.getElementById(`sym-${p.col}-${p.row}`);
-            if(symEl) symEl.classList.add('winning-sym');
+            if(symEl) {
+                symEl.classList.remove('dimmed'); // On enlève le voile sombre
+                symEl.classList.add('winning-sym'); // On agrandit et on illumine
+            }
         });
     });
 }
@@ -167,7 +182,7 @@ function stopAutoSpin() {
 
 // --- LE MOTEUR DU JEU ---
 btnSpin.addEventListener('click', () => {
-    stopAutoSpin(); // Clic manuel arrête l'auto
+    stopAutoSpin(); 
     if (!isSpinning) triggerSpin();
 });
 
@@ -185,10 +200,10 @@ async function triggerSpin() {
     btnSpin.disabled = true;
     betAmountInput.disabled = true;
     
+    // Nettoyage de l'écran précédent
     clearTimeout(winLineTimer);
-    winLinesSvg.innerHTML = '';
+    while (winLinesSvg.firstChild) { winLinesSvg.removeChild(winLinesSvg.firstChild); }
     
-    // Enlever les effets de surbrillance/flou
     for(let c=0; c<5; c++) {
         for(let r=0; r<3; r++) {
             const el = document.getElementById(`sym-${c}-${r}`);
@@ -213,7 +228,6 @@ async function triggerSpin() {
         }
     }
 
-    // Animation de rotation
     for (let col = 0; col < 5; col++) {
         const strip = document.getElementById(`strip-${col}`);
         let blurHTML = '';
@@ -230,7 +244,7 @@ async function triggerSpin() {
         strip.innerHTML = strip.innerHTML + blurHTML + finalHTML;
         strip.offsetHeight; 
 
-        const stopTime = 0.8 + (col * 0.25); // Un peu plus rapide pour plus de fluidité
+        const stopTime = 0.8 + (col * 0.25); 
         strip.style.transition = `transform ${stopTime}s cubic-bezier(0.1, 0.7, 0.1, 1)`;
         strip.style.transform = `translateY(-1440px)`;
         
@@ -241,13 +255,11 @@ async function triggerSpin() {
         }, stopTime * 1000);
     }
 
-    // Calculs et affichage post-spin
     setTimeout(async () => {
         let totalWin = 0;
         let scatterCount = 0;
         const baseSymbols = ['cherry','lemon','orange','grapes','prunes','star','bell','diamond','s67'];
         
-        // Trouver Scatters
         for (let c = 0; c < 5; c++) {
             for (let r = 0; r < 3; r++) {
                 if (finalGrid[c][r] === 'scatter') scatterCount++;
@@ -256,7 +268,6 @@ async function triggerSpin() {
 
         let allWinningPaths = [];
 
-        // Recherche des chemins Multi-Way
         baseSymbols.forEach(symType => {
             let activeNodes = [[], [], [], [], []];
             let length = 0;
@@ -275,8 +286,6 @@ async function triggerSpin() {
             
             if (length >= 3) {
                 let multiplier = SYM_CONFIG[symType].payout[length - 3];
-                
-                // Construire tous les chemins (Array combinatoire) pour ce symbole
                 let pathsForSym = [];
                 function buildPath(col, currentPath) {
                     if(col === length) { pathsForSym.push([...currentPath]); return; }
@@ -293,7 +302,6 @@ async function triggerSpin() {
             }
         });
 
-        // Application FS
         if (freeSpins > 0) { totalWin *= 2; freeSpins--; }
 
         if (scatterCount === 3) freeSpins += 10;
@@ -307,18 +315,13 @@ async function triggerSpin() {
             slotMessage.textContent = `SUPER ! Gain : +${totalWin} Brundles !`;
             slotMessage.style.color = "#2ecc71";
             
-            // Assombrir les symboles perdants
-            for(let c=0; c<5; c++) {
-                for(let r=0; r<3; r++) { document.getElementById(`sym-${c}-${r}`).classList.add('dimmed'); }
-            }
-
-            // Afficher les lignes de manière cyclique
+            // Lancer le dessin des lignes (boucle)
             let pathIndex = 0;
             function showNextLine() {
-                if(!isSpinning && allWinningPaths.length > 0) { // On stoppe si on a relancé
+                if(!isSpinning && allWinningPaths.length > 0) { 
                     drawWinningPaths(allWinningPaths[pathIndex].paths, allWinningPaths[pathIndex].color);
                     pathIndex = (pathIndex + 1) % allWinningPaths.length;
-                    winLineTimer = setTimeout(showNextLine, 1200); // Alterne toutes les 1.2s
+                    winLineTimer = setTimeout(showNextLine, 1500); 
                 }
             }
             showNextLine();
@@ -336,12 +339,11 @@ async function triggerSpin() {
         btnSpin.disabled = false;
         betAmountInput.disabled = false;
         
-        // Relance Auto ou FS (Avec un petit délai pour voir les gains)
         if (freeSpins > 0 || isAutoSpinning) {
             if (isAutoSpinning && freeSpins === 0) autoSpinsRemaining--;
             if (isAutoSpinning && autoSpinsRemaining <= 0 && freeSpins === 0) stopAutoSpin();
-            else setTimeout(triggerSpin, totalWin > 0 ? 1500 : 500); // On attend plus longtemps si on a gagné pour voir la ligne
+            else setTimeout(triggerSpin, totalWin > 0 ? 1800 : 500); 
         }
 
-    }, 2000); // Fin d'animation du dernier rouleau
+    }, 2000); 
 }

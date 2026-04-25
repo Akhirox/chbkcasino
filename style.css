@@ -37,8 +37,7 @@ input, select { padding: 8px; border-radius: 5px; border: none; background-color
     background-color: #000; padding: 10px; border-radius: 10px;
     border-top: 4px solid #222; border-bottom: 4px solid #444;
     height: 240px; overflow: hidden; position: relative;
-    width: 440px; /* 5x80px + 4x10px gap */
-    box-sizing: border-box;
+    width: 440px; box-sizing: border-box;
 }
 
 /* OVERLAY SVG DES LIGNES GAGNANTES */
@@ -50,13 +49,19 @@ input, select { padding: 8px; border-radius: 5px; border: none; background-color
 
 .symbol { width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
 .symbol.dimmed { opacity: 0.2; filter: grayscale(100%); transition: 0.3s; }
+.symbol.winning-sym { opacity: 1 !important; filter: none !important; z-index: 5; position: relative; }
+.symbol.winning-sym img { transform: scale(1.15); filter: drop-shadow(0 0 10px #f1c40f); transition: 0.3s; }
 .symbol img { width: 65px; height: 65px; object-fit: contain; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.8)); }
-.symbol.winning-sym img { transform: scale(1.15); filter: drop-shadow(0 0 10px #f1c40f); transition: 0.3s; z-index: 5; position: relative; }
 
-.slot-controls { display: flex; justify-content: center; align-items: center; gap: 15px; background: #1a1a1a; padding: 15px; border-radius: 10px; border: 1px solid #333; flex-wrap: wrap;}
+/* CONTROLS (CORRECTION DU DEBORDEMENT) */
+.slot-controls { 
+    display: flex; justify-content: center; align-items: center; gap: 10px; 
+    background: #1a1a1a; padding: 15px 10px; border-radius: 10px; border: 1px solid #333; 
+    flex-wrap: wrap; width: 100%; max-width: 440px; box-sizing: border-box; margin: 0 auto;
+}
 .control-group { display: flex; align-items: center; gap: 5px; }
 
-.spin-btn { background-color: #e74c3c; color: white; font-size: 1.2em; padding: 12px 30px; box-shadow: 0 4px 0 #c0392b;}
+.spin-btn { background-color: #e74c3c; color: white; font-size: 1.2em; padding: 12px 25px; box-shadow: 0 4px 0 #c0392b;}
 .spin-btn:hover { background-color: #c0392b; transform: translateY(2px); box-shadow: 0 2px 0 #922b21;}
 .spin-btn:disabled { background-color: #555; box-shadow: 0 4px 0 #333; cursor: not-allowed; }
 
