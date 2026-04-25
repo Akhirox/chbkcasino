@@ -16,7 +16,6 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
-// Éléments UI
 const balanceDisplayLobby = document.getElementById('brundle-balance');
 const balanceDisplaySlot = document.getElementById('slot-brundle-balance');
 const btnSpin = document.getElementById('btn-spin');
@@ -25,10 +24,8 @@ const slotMessage = document.getElementById('slot-message');
 const fsMessage = document.getElementById('freespin-message');
 const ptBetDisplay = document.getElementById('pt-bet-display');
 const paytableContent = document.getElementById('paytable-content');
-
 const bigWinOverlay = document.getElementById('big-win-overlay');
 const bigWinAmount = document.getElementById('big-win-amount');
-
 const autoSpinCountSelect = document.getElementById('auto-spin-count');
 const btnAutoSpin = document.getElementById('btn-auto-spin');
 const btnStopAuto = document.getElementById('btn-stop-auto');
@@ -40,7 +37,7 @@ let isAutoSpinning = false;
 let autoSpinsRemaining = 0;
 let winLineTimer = null;
 
-// --- GESTION DU SOLDE GLOBALE ---
+// --- GESTION DU SOLDE ---
 function updateBalanceDisplays(amount) {
     currentBalance = amount;
     balanceDisplayLobby.textContent = currentBalance;
@@ -60,8 +57,7 @@ function playSound(type) {
     const t = audioCtx.currentTime;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
+    osc.connect(gain); gain.connect(audioCtx.destination);
     
     if (type === 'spin') {
         osc.type = 'sine'; osc.frequency.setValueAtTime(600, t); osc.frequency.exponentialRampToValueAtTime(1200, t + 0.05);
@@ -78,22 +74,21 @@ function playSound(type) {
     }
 }
 
-// --- 21 LIGNES PURGEES (On a enlevé 20, 21, 22, 23) ---
+// --- 21 LIGNES ---
 const PAYLINES = [
     [1, 1, 1, 1, 1], [0, 0, 0, 0, 0], [2, 2, 2, 2, 2], [0, 1, 2, 1, 0], [2, 1, 0, 1, 2],
     [0, 0, 1, 0, 0], [2, 2, 1, 2, 2], [1, 0, 0, 0, 1], [1, 2, 2, 2, 1], [1, 0, 1, 0, 1],
     [1, 2, 1, 2, 1], [0, 1, 0, 1, 0], [2, 1, 2, 1, 2], [1, 1, 0, 1, 1], [1, 1, 2, 1, 1],
-    [0, 2, 2, 2, 0], [2, 0, 0, 0, 2], [0, 1, 2, 2, 2], [2, 1, 0, 0, 0], 
-    [0, 2, 1, 2, 0], [2, 0, 1, 0, 2] // Ex 24 et 25
+    [0, 2, 2, 2, 0], [2, 0, 0, 0, 2], [0, 1, 2, 2, 2], [2, 1, 0, 0, 0], [0, 2, 1, 2, 0], [2, 0, 1, 0, 2] 
 ];
 
-// --- RTP DÉMOLI (Les petits symboles paient encore moins, les gros rapportent) ---
+// --- RTP RÉÉQUILIBRÉ (Maintien en vie adouci) ---
 const SYM_CONFIG = {
-    cherry:  { file: 'slot_cherry.png',  payout: [0.05, 0.2, 1] },
-    lemon:   { file: 'slot_lemon.png',   payout: [0.05, 0.2, 1] },
-    orange:  { file: 'slot_orange.png',  payout: [0.1, 0.4, 2] },
-    grapes:  { file: 'slot_grapes.png',  payout: [0.1, 0.4, 2] },
-    prunes:  { file: 'slot_prunes.png',  payout: [0.2, 0.8, 4] },
+    cherry:  { file: 'slot_cherry.png',  payout: [0.1, 0.3, 1] },
+    lemon:   { file: 'slot_lemon.png',   payout: [0.1, 0.3, 1] },
+    orange:  { file: 'slot_orange.png',  payout: [0.2, 0.5, 2] },
+    grapes:  { file: 'slot_grapes.png',  payout: [0.2, 0.5, 2] },
+    prunes:  { file: 'slot_prunes.png',  payout: [0.3, 0.8, 4] },
     star:    { file: 'slot_star.png',    payout: [0.5, 2, 10] },
     bell:    { file: 'slot_bell.png',    payout: [0.5, 2, 10] },
     diamond: { file: 'slot_diamond.png', payout: [2, 10, 50] },
@@ -102,15 +97,15 @@ const SYM_CONFIG = {
     scatter: { file: 'slot_chbk.png',    payout: [0, 0, 0] } 
 };
 
-// La bande est inondée de cerises et de citrons.
+// On ajoute un tout petit peu de symboles spéciaux pour la jouabilité
 const reelTape = [
-    'cherry','cherry','cherry','cherry','cherry','cherry','cherry',
-    'lemon','lemon','lemon','lemon','lemon','lemon',
-    'orange','orange','orange','orange','orange',
-    'grapes','grapes','grapes','grapes',
-    'prunes','prunes','prunes',
-    'star','bell', 
-    'diamond', 's67', 'wild', 'scatter' // Très rares !
+    'cherry','cherry','cherry','cherry','cherry','cherry',
+    'lemon','lemon','lemon','lemon','lemon',
+    'orange','orange','orange','orange',
+    'grapes','grapes','grapes',
+    'prunes','prunes',
+    'star','star','bell','bell', 
+    'diamond','diamond', 's67', 'wild','wild', 'scatter','scatter' 
 ];
 
 function updatePaytable() {
@@ -122,7 +117,6 @@ function updatePaytable() {
     
     displayOrder.forEach(sym => {
         const p = SYM_CONFIG[sym].payout;
-        // On arrondit pour un affichage propre
         html += `<div class="paytable-row">
                     <img src="slot_symbols/${SYM_CONFIG[sym].file}" class="paytable-sym">
                     <span class="paytable-vals">5x: <b>${Math.max(1, Math.floor(p[2]*bet))}</b> | 4x: <b>${Math.max(1, Math.floor(p[1]*bet))}</b> | 3x: <b>${Math.max(1, Math.floor(p[0]*bet))}</b></span>
@@ -131,7 +125,7 @@ function updatePaytable() {
     paytableContent.innerHTML = html;
 }
 
-// --- BOUTONS DE MISE ---
+// --- BOUTONS ET CLAVIER (ESPACE) ---
 document.querySelectorAll('.btn-bet').forEach(btn => {
     btn.addEventListener('click', (e) => {
         if (isSpinning) return;
@@ -148,6 +142,16 @@ document.querySelectorAll('.btn-bet').forEach(btn => {
     });
 });
 betAmountInput.addEventListener('input', updatePaytable);
+
+// Touche Espace pour lancer la machine
+window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' && !document.getElementById('slot-section').classList.contains('hidden')) {
+        e.preventDefault(); // Empêche l'écran de défiler vers le bas
+        if (!btnSpin.disabled && !isSpinning) {
+            btnSpin.click();
+        }
+    }
+});
 
 function initReels() {
     for(let col = 0; col < 5; col++) {
@@ -194,7 +198,7 @@ document.getElementById('btn-claim-bonus').addEventListener('click', async () =>
 document.getElementById('btn-open-slot').addEventListener('click', () => { document.getElementById('casino-section').classList.add('hidden'); document.getElementById('slot-section').classList.remove('hidden'); });
 document.getElementById('btn-back-lobby').addEventListener('click', () => { document.getElementById('slot-section').classList.add('hidden'); document.getElementById('casino-section').classList.remove('hidden'); stopAutoSpin(); });
 
-// --- ANIMATIONS VISUELLES FORCEES ---
+// --- ANIMATIONS VISUELLES ---
 function drawWinningSymbols(symbolCoords) {
     for(let c=0; c<5; c++) {
         for(let r=0; r<3; r++) {
@@ -213,7 +217,7 @@ function drawWinningSymbols(symbolCoords) {
 }
 
 function resetSymbolsVisuals() {
-    bigWinOverlay.classList.add('hidden'); // Cache l'animation big win
+    bigWinOverlay.classList.add('hidden');
     for(let c=0; c<5; c++) {
         for(let r=0; r<3; r++) {
             const el = document.getElementById(`sym-${c}-${r}`);
@@ -260,8 +264,6 @@ async function triggerSpin() {
 
     isSpinning = true;
     btnSpin.disabled = true;
-    
-    // Désactiver tous les boutons de mise pendant le spin
     betAmountInput.disabled = true;
     document.querySelectorAll('.btn-bet').forEach(btn => btn.disabled = true);
     
@@ -360,7 +362,6 @@ async function triggerSpin() {
 
             if (matchCount >= 3 && firstSym) {
                 let multiplier = SYM_CONFIG[firstSym].payout[matchCount - 3];
-                // Floor pour éviter les décimales si le joueur met des mises bizarres
                 let realPayout = Math.floor(bet * multiplier); 
                 
                 if (realPayout > 0) {
@@ -383,7 +384,6 @@ async function triggerSpin() {
         } else if (totalWin > 0) {
             playSound('win');
             
-            // ANIMATION BIG WIN OVERLAY
             bigWinAmount.textContent = `+${totalWin}`;
             bigWinOverlay.classList.remove('hidden');
             
@@ -418,9 +418,8 @@ async function triggerSpin() {
         if (freeSpins > 0 || isAutoSpinning) {
             if (isAutoSpinning && freeSpins === 0) autoSpinsRemaining--;
             if (isAutoSpinning && autoSpinsRemaining <= 0 && freeSpins === 0) stopAutoSpin();
-            else setTimeout(triggerSpin, totalWin > 0 ? 3000 : 800); // Délai rallongé pour laisser le temps de voir le Big Win
+            else setTimeout(triggerSpin, totalWin > 0 ? 3000 : 800); 
         } else if (totalWin > 0) {
-            // Si pas d'autospin, on cache l'overlay Big Win au bout de 3 secondes pour laisser le joueur rejouer
             setTimeout(() => { if(!isSpinning) bigWinOverlay.classList.add('hidden'); }, 3000);
         }
 

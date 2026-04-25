@@ -40,28 +40,29 @@
     </div>
 
     <div id="slot-section" class="hidden">
-        <button id="btn-back-lobby" class="btn-small" style="margin-bottom: 20px;">⬅ Retour au Lobby</button>
-        
         <div class="slot-layout">
-            <div class="paytable-section">
-                <h3>Gains (Mise: <span id="pt-bet-display">50</span>)</h3>
-                <div id="paytable-content" class="paytable-grid"></div>
-                <div class="paytable-rules">
-                    <div class="special-symbol-rule">
-                        <img src="slot_symbols/slot_wild.png" class="paytable-sym">
-                        <p><b>WILD :</b> Remplace tout (sauf Scatter).</p>
-                    </div>
-                    <div class="special-symbol-rule">
-                        <img src="slot_symbols/slot_chbk.png" class="paytable-sym">
-                        <p><b>CHBK SCATTER :</b> <br>3 = 10 FS | 4 = 20 FS | 5 = 30 FS<br>(Gains X2 pendant les FS)</p>
+            
+            <div class="left-column">
+                <button id="btn-back-lobby" class="btn-small" style="margin-bottom: 15px; display: block; width: 100%; padding: 10px;">⬅ Retour au Lobby</button>
+                <div class="paytable-section">
+                    <h3>Gains (Mise: <span id="pt-bet-display">50</span>)</h3>
+                    <div id="paytable-content" class="paytable-grid"></div>
+                    <div class="paytable-rules">
+                        <div class="special-symbol-rule">
+                            <img src="slot_symbols/slot_wild.png" class="paytable-sym">
+                            <p><b>WILD :</b> Remplace tout (sauf Scatter).</p>
+                        </div>
+                        <div class="special-symbol-rule">
+                            <img src="slot_symbols/slot_chbk.png" class="paytable-sym">
+                            <p><b>CHBK SCATTER :</b> <br>3 = 10 FS | 4 = 20 FS | 5 = 30 FS<br>(Gains X2 pendant les FS)</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="slot-machine-wrapper">
                 <div class="slot-header">
-                    <h2>CHBK Slot (21 Lignes)</h2>
-                    <div class="live-balance">Solde : <span id="slot-brundle-balance">...</span></div>
+                    <div class="live-balance" style="margin-left: auto;">Solde : <span id="slot-brundle-balance">...</span></div>
                 </div>
                 
                 <div class="slot-machine dark-theme">
@@ -125,6 +126,6 @@
         </div>
     </div>
 
-    <script type="module" src="app.js?v=14"></script>
+    <script type="module" src="app.js?v=15"></script>
 </body>
 </html>
