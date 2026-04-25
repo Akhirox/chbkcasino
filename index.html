@@ -59,9 +59,21 @@
             </div>
 
             <div class="slot-machine-wrapper">
-                <h2>CHBK Slot (25 Lignes)</h2>
+                <div class="slot-header">
+                    <h2>CHBK Slot (21 Lignes)</h2>
+                    <div class="live-balance">Solde : <span id="slot-brundle-balance">...</span></div>
+                </div>
+                
                 <div class="slot-machine dark-theme">
                     <div class="slot-window" id="slot-window">
+                        
+                        <div id="big-win-overlay" class="hidden">
+                            <div class="win-text-container">
+                                <h3>JACKPOT !</h3>
+                                <p id="big-win-amount">+0</p>
+                            </div>
+                        </div>
+
                         <div class="reel-container"><div class="reel-strip" id="strip-0"></div></div>
                         <div class="reel-container"><div class="reel-strip" id="strip-1"></div></div>
                         <div class="reel-container"><div class="reel-strip" id="strip-2"></div></div>
@@ -69,23 +81,43 @@
                         <div class="reel-container"><div class="reel-strip" id="strip-4"></div></div>
                     </div>
                     
-                    <div class="slot-controls">
-                        <div class="control-group">
-                            <label for="bet-amount">Mise :</label>
-                            <input type="number" id="bet-amount" value="50" min="10" step="10" style="width: 70px;">
+                    <div class="master-controls">
+                        <div class="bet-panel">
+                            <div class="bet-display">
+                                <label>Mise</label>
+                                <input type="number" id="bet-amount" value="50" min="1">
+                            </div>
+                            <div class="bet-buttons">
+                                <button class="btn-bet" data-val="/2">/2</button>
+                                <button class="btn-bet" data-val="x2">x2</button>
+                                <button class="btn-bet" data-val="-1">-1</button>
+                                <button class="btn-bet" data-val="+1">+1</button>
+                                <button class="btn-bet" data-val="-5">-5</button>
+                                <button class="btn-bet" data-val="+5">+5</button>
+                                <button class="btn-bet" data-val="-10">-10</button>
+                                <button class="btn-bet" data-val="+10">+10</button>
+                                <button class="btn-bet" data-val="-100">-100</button>
+                                <button class="btn-bet" data-val="+100">+100</button>
+                                <button class="btn-bet" data-val="-1000">-1k</button>
+                                <button class="btn-bet" data-val="+1000">+1k</button>
+                            </div>
                         </div>
-                        <button id="btn-spin" class="btn spin-btn">JOUER</button>
-                        <div class="control-group auto-spin-group">
-                            <select id="auto-spin-count">
-                                <option value="10">10 Auto</option>
-                                <option value="50">50 Auto</option>
-                                <option value="100">100 Auto</option>
-                                <option value="999999">Infini</option>
-                            </select>
-                            <button id="btn-auto-spin" class="btn auto-btn">AUTO</button>
-                            <button id="btn-stop-auto" class="btn stop-btn hidden">STOP</button>
+
+                        <div class="action-panel">
+                            <button id="btn-spin" class="btn spin-btn">JOUER</button>
+                            <div class="auto-spin-group">
+                                <select id="auto-spin-count">
+                                    <option value="10">10 Auto</option>
+                                    <option value="50">50 Auto</option>
+                                    <option value="100">100 Auto</option>
+                                    <option value="999999">Infini</option>
+                                </select>
+                                <button id="btn-auto-spin" class="btn auto-btn">AUTO</button>
+                                <button id="btn-stop-auto" class="btn stop-btn hidden">STOP</button>
+                            </div>
                         </div>
                     </div>
+                    
                     <p id="freespin-message" class="fs-msg"></p>
                     <p id="slot-message" class="slot-msg">Prêt à tenter ta chance ?</p>
                 </div>
@@ -93,6 +125,6 @@
         </div>
     </div>
 
-    <script type="module" src="app.js?v=13"></script>
+    <script type="module" src="app.js?v=14"></script>
 </body>
 </html>
