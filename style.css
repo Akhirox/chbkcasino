@@ -91,7 +91,9 @@ input, select { padding: 8px; border-radius: 5px; border: none; background-color
 .roulette-wheel { width: 100%; height: 100%; border-radius: 50%; position: relative; transition: transform 5s cubic-bezier(0.15, 0.85, 0.2, 1); }
 .wheel-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 130px; height: 130px; background: radial-gradient(circle, #b8860b, #5c3a21); border-radius: 50%; border: 5px solid #f1c40f; z-index: 10; box-shadow: 0 0 20px rgba(0,0,0,0.9); display: flex; justify-content: center; align-items: center; }
 #roulette-winner-text { font-size: 3em; font-weight: bold; color: white; text-shadow: 0 2px 5px rgba(0,0,0,0.8); }
-.wheel-pocket { position: absolute; top: 0; left: 50%; transform-origin: 50% 100%; width: 28px; height: 50%; margin-left: -14px; clip-path: polygon(20% 0, 80% 0, 50% 100%); display: flex; justify-content: center; padding-top: 5px; font-weight: bold; font-size: 13px; color: white; user-select: none; }
+
+/* FIX DES ESPACES NOIRS : On modifie la forme pour un triangle plein */
+.wheel-pocket { position: absolute; top: 0; left: 50%; transform-origin: 50% 100%; width: 30px; height: 50%; margin-left: -15px; clip-path: polygon(0 0, 100% 0, 50% 100%); display: flex; justify-content: center; padding-top: 5px; font-weight: bold; font-size: 13px; color: white; user-select: none; }
 .pocket-red { background-color: #e74c3c; }
 .pocket-black { background-color: #2c3e50; }
 .pocket-green { background-color: #27ae60; }
@@ -108,7 +110,7 @@ input, select { padding: 8px; border-radius: 5px; border: none; background-color
 .r-green { background-color: #27ae60; }
 .r-special { background-color: transparent; border: 2px solid rgba(255,255,255,0.5); font-size: 0.9em; text-transform: uppercase;}
 
-/* CIBLES POUR MISES COMPLEXES (Chevaux et Carrés) */
+/* CIBLES POUR MISES COMPLEXES */
 .bet-target { position: absolute; z-index: 5; display: flex; justify-content: center; align-items: center; }
 .bet-target:hover { background: rgba(241, 196, 15, 0.5); border-radius: 50%; }
 .split-h { right: -6px; top: 15%; height: 70%; width: 10px; }
@@ -138,5 +140,5 @@ input, select { padding: 8px; border-radius: 5px; border: none; background-color
 .chip-100 { background: #9b59b6; color: white;}
 .chip-500 { background: #f1c40f; color: black; border-color: black;}
 .chip-1000 { background: #e74c3c; color: white;}
-.roulette-actions { display: flex; gap: 15px; }
-.roulette-actions button { flex: 1; padding: 15px; font-size: 1.2em; border-radius: 10px;}
+.roulette-actions { display: flex; gap: 10px; }
+.roulette-actions button { flex: 1; padding: 15px; font-size: 1.1em; border-radius: 10px; font-weight: bold;}

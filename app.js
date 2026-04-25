@@ -32,6 +32,7 @@ const paytableContent = document.getElementById('paytable-content');
 const bigWinOverlay = document.getElementById('big-win-overlay');
 const bigWinAmount = document.getElementById('big-win-amount');
 const winDisplayContent = document.getElementById('win-display-content');
+const winDisplaySection = document.getElementById('win-display-section');
 const autoSpinCountSelect = document.getElementById('auto-spin-count');
 const btnAutoSpin = document.getElementById('btn-auto-spin');
 const btnStopAuto = document.getElementById('btn-stop-auto');
@@ -42,6 +43,7 @@ const balanceDisplayRoulette = document.getElementById('roulette-brundle-balance
 const rouletteBoard = document.getElementById('roulette-board');
 const btnSpinRoulette = document.getElementById('btn-spin-roulette');
 const btnClearRoulette = document.getElementById('btn-clear-roulette');
+const btnRepeatRoulette = document.getElementById('btn-repeat-roulette');
 const rouletteMessage = document.getElementById('roulette-message');
 const wheelEl = document.getElementById('roulette-wheel');
 const winnerTextEl = document.getElementById('roulette-winner-text');
@@ -59,6 +61,10 @@ let rouletteBets = {};
 let totalRouletteBet = 0;
 let isRouletteSpinning = false;
 let currentWheelRotation = 0;
+
+// Répétition de mise
+let lastRouletteBets = {};
+let lastTotalRouletteBet = 0;
 
 const AMERICAN_WHEEL_ORDER = ['0', '28', '9', '26', '30', '11', '7', '20', '32', '17', '5', '22', '34', '15', '3', '24', '36', '13', '1', '00', '27', '10', '25', '29', '12', '8', '19', '31', '18', '6', '21', '33', '16', '4', '23', '35', '14', '2'];
 const RED_NUMS = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
@@ -132,7 +138,6 @@ function initRouletteBoard() {
     for (let col = 1; col <= 12; col++) {
         const n3 = col * 3; const n2 = col * 3 - 1; const n1 = col * 3 - 2;
         
-        // Fonction pour injecter les cibles de paris complexes (Chevaux et Carrés)
         const getTargets = (n, r, c) => {
             let t = '';
             if (r > 1) t += `<div class="bet-target split-v" data-bet="${n},${n+1}"></div>`;
@@ -160,10 +165,9 @@ function initRouletteBoard() {
     `;
     rouletteBoard.innerHTML = html;
 
-    // GESTION DU CLIC GAUCHE (Poser) ET CLIC DROIT (Retirer)
     rouletteBoard.addEventListener('click', handleBet);
     rouletteBoard.addEventListener('contextmenu', (e) => {
-        e.preventDefault(); // Empêche le menu Windows d'apparaître
+        e.preventDefault(); 
         handleBet(e, true);
     });
 }
@@ -177,7 +181,7 @@ function handleBet(e, isRemoving = false) {
     const betType = target.dataset.bet;
     
     if (isRemoving) {
-        if (!rouletteBets[betType] || rouletteBets[betType] <= 0) return; // Rien à enlever
+        if (!rouletteBets[betType] || rouletteBets[betType] <= 0) return; 
         
         let amountToRemove = Math.min(selectedChipValue, rouletteBets[betType]);
         rouletteBets[betType] -= amountToRemove;
@@ -193,7 +197,6 @@ function handleBet(e, isRemoving = false) {
         }
         playSound('spin');
     } else {
-        // Ajout classique
         if (currentBalance < selectedChipValue) {
             rouletteMessage.textContent = "Fonds insuffisants !";
             rouletteMessage.style.color = "#e74c3c";
@@ -243,6 +246,47 @@ btnClearRoulette.addEventListener('click', () => {
     rouletteMessage.textContent = "Paris annulés.";
 });
 
+btnRepeatRoulette.addEventListener('click', () => {
+    if (isRouletteSpinning || lastTotalRouletteBet === 0) return;
+    initAudio();
+    
+    // Rembourser ce qui est posé pour éviter le double débit
+    if (totalRouletteBet > 0) {
+        updateBalanceDisplays(currentBalance + totalRouletteBet);
+        rouletteBets = {};
+        totalRouletteBet = 0;
+        document.querySelectorAll('.placed-chip').forEach(c => c.remove());
+    }
+
+    if (currentBalance < lastTotalRouletteBet) {
+        rouletteMessage.textContent = "Fonds insuffisants pour répéter la mise !";
+        rouletteMessage.style.color = "#e74c3c";
+        return;
+    }
+
+    rouletteBets = { ...lastRouletteBets };
+    totalRouletteBet = lastTotalRouletteBet;
+    updateBalanceDisplays(currentBalance - totalRouletteBet);
+    
+    for (const [betType, amount] of Object.entries(rouletteBets)) {
+        const target = document.querySelector(`[data-bet="${betType}"]`);
+        if (target) {
+            let chipEl = target.querySelector('.placed-chip');
+            if (!chipEl) {
+                chipEl = document.createElement('div');
+                chipEl.className = 'placed-chip';
+                target.appendChild(chipEl);
+            }
+            chipEl.textContent = formatChipValue(amount);
+        }
+    }
+    
+    updateRouletteSpinButton();
+    rouletteMessage.textContent = "Mise répétée !";
+    rouletteMessage.style.color = "#aaa";
+    playSound('spin');
+});
+
 btnSpinRoulette.addEventListener('click', async () => {
     initAudio();
     if (isRouletteSpinning) return;
@@ -253,9 +297,13 @@ btnSpinRoulette.addEventListener('click', async () => {
     }
 
     isRouletteSpinning = true;
-    btnSpinRoulette.disabled = true; btnClearRoulette.disabled = true;
+    btnSpinRoulette.disabled = true; btnClearRoulette.disabled = true; btnRepeatRoulette.disabled = true;
     rouletteMessage.textContent = "Rien ne va plus !"; rouletteMessage.style.color = "#fff";
     winnerTextEl.textContent = "";
+
+    // Sauvegarde pour le bouton répéter
+    lastRouletteBets = { ...rouletteBets };
+    lastTotalRouletteBet = totalRouletteBet;
 
     let rng = Math.floor(Math.random() * 38);
     let winningString = rng === 37 ? '00' : rng.toString();
@@ -281,7 +329,6 @@ async function finishRouletteSpin(winningString) {
     else if (isRed) winnerTextEl.style.color = "#e74c3c";
     else winnerTextEl.style.color = "#bdc3c7"; 
 
-    // Ajout à l'historique
     const histItem = document.createElement('div');
     histItem.className = `hist-item ${isGreen ? 'pocket-green' : (isRed ? 'pocket-red' : 'pocket-black')}`;
     histItem.textContent = winningString;
@@ -295,17 +342,14 @@ async function finishRouletteSpin(winningString) {
 
     for (const [betType, amount] of Object.entries(rouletteBets)) {
         if (betType.includes(',')) {
-            // Mises complexes (Cheval x18, Carré x9)
             const nums = betType.split(',');
             if (nums.includes(winningString)) {
                 if (nums.length === 2) winAmount += amount * 18;
                 if (nums.length === 4) winAmount += amount * 9;
             }
         } else {
-            // Numéro plein
             if (betType === winningString) winAmount += amount * 36; 
             
-            // Paris extérieurs
             if (!isGreen) {
                 if (betType === 'red' && isRed) winAmount += amount * 2;
                 if (betType === 'black' && !isRed) winAmount += amount * 2;
@@ -335,11 +379,11 @@ async function finishRouletteSpin(winningString) {
 
     rouletteBets = {}; totalRouletteBet = 0; updateRouletteSpinButton();
     document.querySelectorAll('.placed-chip').forEach(c => c.remove());
-    isRouletteSpinning = false; btnSpinRoulette.disabled = false; btnClearRoulette.disabled = false;
+    isRouletteSpinning = false; btnSpinRoulette.disabled = false; btnClearRoulette.disabled = false; btnRepeatRoulette.disabled = false;
 }
 
 // ==========================================
-// SLOT MACHINE LOGIC (Inchangé)
+// SLOT MACHINE LOGIC
 // ==========================================
 const PAYLINES = [
     [1, 1, 1, 1, 1], [0, 0, 0, 0, 0], [2, 2, 2, 2, 2], [0, 1, 2, 1, 0], [2, 1, 0, 1, 2],
