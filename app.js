@@ -27,7 +27,7 @@ const paytableContent = document.getElementById('paytable-content');
 const bigWinOverlay = document.getElementById('big-win-overlay');
 const bigWinAmount = document.getElementById('big-win-amount');
 
-// Les nouveaux éléments pour l'affichage des lignes
+// Les éléments pour l'affichage des lignes
 const winDisplaySection = document.getElementById('win-display-section');
 const winDisplayContent = document.getElementById('win-display-content');
 
@@ -77,12 +77,28 @@ function playSound(type) {
     }
 }
 
-// --- LES 21 LIGNES (O=0, M=1, B=2) ---
+// --- TES 20 LIGNES EXACTES (O=0, M=1, B=2) ---
 const PAYLINES = [
-    [1, 1, 1, 1, 1], [0, 0, 0, 0, 0], [2, 2, 2, 2, 2], [0, 1, 2, 1, 0], [2, 1, 0, 1, 2],
-    [0, 0, 1, 0, 0], [2, 2, 1, 2, 2], [1, 0, 0, 0, 1], [1, 2, 2, 2, 1], [1, 0, 1, 0, 1],
-    [1, 2, 1, 2, 1], [0, 1, 0, 1, 0], [2, 1, 2, 1, 2], [1, 1, 0, 1, 1], [1, 1, 2, 1, 1],
-    [0, 2, 2, 2, 0], [2, 0, 0, 0, 2], [0, 1, 2, 2, 2], [2, 1, 0, 0, 0], [0, 2, 1, 2, 0], [2, 0, 1, 0, 2]
+    [1, 1, 1, 1, 1], // 1
+    [0, 0, 0, 0, 0], // 2
+    [2, 2, 2, 2, 2], // 3
+    [0, 1, 2, 1, 0], // 4
+    [2, 1, 0, 1, 2], // 5
+    [0, 0, 1, 0, 0], // 6
+    [2, 2, 1, 2, 2], // 7
+    [1, 2, 2, 2, 1], // 9 (le 8 dans ta liste n'y était pas)
+    [1, 0, 1, 0, 1], // 10
+    [1, 2, 1, 2, 1], // 11
+    [0, 1, 0, 1, 0], // 12
+    [2, 1, 2, 1, 2], // 13
+    [1, 1, 0, 1, 1], // 14
+    [1, 1, 2, 1, 1], // 15
+    [0, 1, 1, 1, 0], // 16
+    [2, 1, 1, 1, 2], // 17
+    [0, 1, 2, 2, 2], // 18
+    [2, 1, 0, 0, 0], // 19
+    [0, 0, 1, 2, 2], // 20
+    [2, 2, 1, 0, 0]  // 21
 ];
 
 const SYM_CONFIG = {
@@ -288,6 +304,7 @@ async function triggerSpin() {
         
         for (let c = 0; c < 5; c++) for (let r = 0; r < 3; r++) if (finalGrid[c][r] === 'scatter') scatterCount++;
 
+        // Utilisation du bon index de tes lignes
         PAYLINES.forEach((line, index) => {
             let firstSym = null; let matchCount = 0; let winningSymbolsCoords = [];
             for(let col = 0; col < 5; col++) {
@@ -304,8 +321,9 @@ async function triggerSpin() {
                     totalWin += realPayout;
                     allWinningPaths.push(winningSymbolsCoords);
                     
-                    // CREATION DE LA MINI GRILLE POUR CETTE LIGNE
-                    let gridHTML = `<div class="win-line-box"><span>Ligne ${index + 1} : +${realPayout}</span><div class="mini-grid">`;
+                    // CREATION DE LA MINI GRILLE
+                    // Les index de tes lignes ne sont pas de 0 à 19 pour l'affichage, on va afficher "Ligne Trouvée"
+                    let gridHTML = `<div class="win-line-box"><span>Ligne Trouvée : +${realPayout}</span><div class="mini-grid">`;
                     for(let r=0; r<3; r++) {
                         for(let c=0; c<5; c++) {
                             const isActive = winningSymbolsCoords.some(p => p.col === c && p.row === r);
@@ -338,6 +356,9 @@ async function triggerSpin() {
             let pathIndex = 0;
             function showNextWinningSet() {
                 if(!isSpinning && allWinningPaths.length > 0) { 
+                    resetSymbolsVisuals();
+                    // On garde la grille visible pendant l'animation
+                    winDisplaySection.classList.remove('hidden');
                     drawWinningSymbols(allWinningPaths[pathIndex]); 
                     pathIndex = (pathIndex + 1) % allWinningPaths.length;
                     winLineTimer = setTimeout(showNextWinningSet, 1200); 
