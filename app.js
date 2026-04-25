@@ -16,7 +16,6 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
-// Éléments UI
 const balanceDisplay = document.getElementById('brundle-balance');
 const btnSpin = document.getElementById('btn-spin');
 const betAmountInput = document.getElementById('bet-amount');
@@ -36,7 +35,7 @@ let isAutoSpinning = false;
 let autoSpinsRemaining = 0;
 let winLineTimer = null;
 
-// --- MOTEUR AUDIO (Web Audio API) ---
+// --- MOTEUR AUDIO ---
 let audioCtx = null;
 function initAudio() {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -78,7 +77,7 @@ function playSound(type) {
     }
 }
 
-// --- LES 25 LIGNES DE PAIEMENT ---
+// --- 25 LIGNES & HAUTE VOLATILITÉ ---
 const PAYLINES = [
     [1, 1, 1, 1, 1], [0, 0, 0, 0, 0], [2, 2, 2, 2, 2], [0, 1, 2, 1, 0], [2, 1, 0, 1, 2],
     [0, 0, 1, 0, 0], [2, 2, 1, 2, 2], [1, 0, 0, 0, 1], [1, 2, 2, 2, 1], [1, 0, 1, 0, 1],
@@ -87,22 +86,20 @@ const PAYLINES = [
     [2, 0, 2, 0, 2], [0, 0, 2, 0, 0], [2, 2, 0, 2, 2], [0, 2, 1, 2, 0], [2, 0, 1, 0, 2]
 ];
 
-// --- HAUTE VOLATILITÉ : Multiplicateurs de la mise TOTALE ---
 const SYM_CONFIG = {
-    cherry:  { file: 'slot_cherry.png',  payout: [0.1, 0.5, 2],  color: '#e74c3c' },
-    lemon:   { file: 'slot_lemon.png',   payout: [0.1, 0.5, 2],  color: '#f1c40f' },
-    orange:  { file: 'slot_orange.png',  payout: [0.2, 0.8, 3],  color: '#e67e22' },
-    grapes:  { file: 'slot_grapes.png',  payout: [0.2, 0.8, 3],  color: '#9b59b6' },
-    prunes:  { file: 'slot_prunes.png',  payout: [0.3, 1, 4],    color: '#8e44ad' },
-    star:    { file: 'slot_star.png',    payout: [0.5, 2, 10],   color: '#f39c12' },
-    bell:    { file: 'slot_bell.png',    payout: [0.5, 2, 10],   color: '#f1c40f' },
-    diamond: { file: 'slot_diamond.png', payout: [2, 10, 50],    color: '#3498db' },
-    s67:     { file: 'slot_67.png',      payout: [10, 50, 200],  color: '#2ecc71' },
-    wild:    { file: 'slot_wild.png',    payout: [0, 0, 0],      color: '#ffffff' },
-    scatter: { file: 'slot_chbk.png',    payout: [0, 0, 0],      color: '#e74c3c' } 
+    cherry:  { file: 'slot_cherry.png',  payout: [0.1, 0.5, 2] },
+    lemon:   { file: 'slot_lemon.png',   payout: [0.1, 0.5, 2] },
+    orange:  { file: 'slot_orange.png',  payout: [0.2, 0.8, 3] },
+    grapes:  { file: 'slot_grapes.png',  payout: [0.2, 0.8, 3] },
+    prunes:  { file: 'slot_prunes.png',  payout: [0.3, 1, 4] },
+    star:    { file: 'slot_star.png',    payout: [0.5, 2, 10] },
+    bell:    { file: 'slot_bell.png',    payout: [0.5, 2, 10] },
+    diamond: { file: 'slot_diamond.png', payout: [2, 10, 50] },
+    s67:     { file: 'slot_67.png',      payout: [10, 50, 200] },
+    wild:    { file: 'slot_wild.png',    payout: [0, 0, 0] },
+    scatter: { file: 'slot_chbk.png',    payout: [0, 0, 0] } 
 };
 
-// Bande RTP v12 : RARETÉ FIXEE (Beaucoup de fruits, Wild et Scatter très rares)
 const reelTape = [
     'cherry','cherry','cherry','cherry','cherry',
     'lemon','lemon','lemon','lemon','lemon',
@@ -177,24 +174,52 @@ document.getElementById('btn-claim-bonus').addEventListener('click', async () =>
 document.getElementById('btn-open-slot').addEventListener('click', () => { document.getElementById('casino-section').classList.add('hidden'); document.getElementById('slot-section').classList.remove('hidden'); });
 document.getElementById('btn-back-lobby').addEventListener('click', () => { document.getElementById('slot-section').classList.add('hidden'); document.getElementById('casino-section').classList.remove('hidden'); balanceDisplay.textContent = currentBalance; stopAutoSpin(); });
 
-// --- GESTION DES SYMBOLES GAGNANTS (Glow Vert + Respiration) ---
+// --- NOUVELLE GESTION DES SYMBOLES GAGNANTS (La Méthode Forte via JavaScript) ---
 function drawWinningSymbols(symbolCoords) {
-    // 1. On assombrit tous les symboles avant d'illuminer la nouvelle ligne
+    // 1. On assombrit tout
     for(let c=0; c<5; c++) {
         for(let r=0; r<3; r++) {
             const el = document.getElementById(`sym-${c}-${r}`);
-            if (el) { el.classList.remove('winning-sym'); el.classList.add('dimmed'); }
+            if (el) { 
+                el.style.opacity = '0.2';
+                el.style.filter = 'grayscale(100%)';
+                el.style.transform = 'scale(1)';
+                el.style.boxShadow = 'none';
+                el.style.background = 'transparent';
+                el.style.zIndex = '1';
+            }
         }
     }
 
-    // 2. On illumine les symboles de ce chemin gagnant
+    // 2. On illumine les gagnants avec du style forcé
     symbolCoords.forEach(p => {
         const symEl = document.getElementById(`sym-${p.col}-${p.row}`);
         if(symEl) {
-            symEl.classList.remove('dimmed');
-            symEl.classList.add('winning-sym');
+            symEl.style.transition = '0.3s ease';
+            symEl.style.opacity = '1';
+            symEl.style.filter = 'none';
+            symEl.style.transform = 'scale(1.1)';
+            symEl.style.background = 'rgba(46, 204, 113, 0.2)'; // Fond vert transparent
+            symEl.style.boxShadow = '0 0 20px #2ecc71, inset 0 0 15px #2ecc71'; // Glow vert
+            symEl.style.borderRadius = '15px';
+            symEl.style.zIndex = '10';
         }
     });
+}
+
+function resetSymbolsVisuals() {
+    for(let c=0; c<5; c++) {
+        for(let r=0; r<3; r++) {
+            const el = document.getElementById(`sym-${c}-${r}`);
+            if(el) { 
+                el.style.opacity = '1'; 
+                el.style.filter = 'none';
+                el.style.transform = 'scale(1)';
+                el.style.boxShadow = 'none';
+                el.style.background = 'transparent';
+            }
+        }
+    }
 }
 
 // --- FONCTIONS AUTOSPIN ---
@@ -238,13 +263,7 @@ async function triggerSpin() {
     betAmountInput.disabled = true;
     
     clearTimeout(winLineTimer);
-    
-    for(let c=0; c<5; c++) {
-        for(let r=0; r<3; r++) {
-            const el = document.getElementById(`sym-${c}-${r}`);
-            if(el) { el.classList.remove('winning-sym'); el.classList.remove('dimmed'); }
-        }
-    }
+    resetSymbolsVisuals(); // On remet tout à zéro avant de tourner
 
     if (freeSpins > 0) {
         fsMessage.textContent = `🎰 FREE SPINS : Il t'en reste ${freeSpins} ! (Gains X2)`;
@@ -265,10 +284,8 @@ async function triggerSpin() {
 
     let spinTickInterval = setInterval(() => playSound('spin'), 120);
 
-    // Animation de rotation
     for (let col = 0; col < 5; col++) {
         const strip = document.getElementById(`strip-${col}`);
-        
         let oldHTML = strip.innerHTML.replace(/id="sym-\d-\d"/g, '');
         
         let blurHTML = '';
@@ -305,14 +322,12 @@ async function triggerSpin() {
         let scatterCount = 0;
         let allWinningPaths = [];
         
-        // 1. Comptage des Scatters
         for (let c = 0; c < 5; c++) {
             for (let r = 0; r < 3; r++) {
                 if (finalGrid[c][r] === 'scatter') scatterCount++;
             }
         }
 
-        // 2. Vérification des 25 Lignes
         PAYLINES.forEach(line => {
             let firstSym = null;
             let matchCount = 0;
@@ -351,7 +366,6 @@ async function triggerSpin() {
             }
         });
 
-        // Application FS
         if (freeSpins > 0) { totalWin *= 2; freeSpins--; }
 
         if (scatterCount === 3) freeSpins += 10;
@@ -367,11 +381,11 @@ async function triggerSpin() {
             slotMessage.textContent = `SUPER ! Gain : +${totalWin} Brundles !`;
             slotMessage.style.color = "#2ecc71";
             
-            // Lancer l'animation des symboles gagnants
             let pathIndex = 0;
             function showNextWinningSet() {
                 if(!isSpinning && allWinningPaths.length > 0) { 
-                    drawWinningSymbols(allWinningPaths[pathIndex]);
+                    resetSymbolsVisuals(); // On efface la ligne précédente
+                    drawWinningSymbols(allWinningPaths[pathIndex]); // On affiche la nouvelle
                     pathIndex = (pathIndex + 1) % allWinningPaths.length;
                     winLineTimer = setTimeout(showNextWinningSet, 1200); 
                 }
@@ -391,7 +405,6 @@ async function triggerSpin() {
         btnSpin.disabled = false;
         betAmountInput.disabled = false;
         
-        // Relance Auto ou FS
         if (freeSpins > 0 || isAutoSpinning) {
             if (isAutoSpinning && freeSpins === 0) autoSpinsRemaining--;
             if (isAutoSpinning && autoSpinsRemaining <= 0 && freeSpins === 0) stopAutoSpin();
