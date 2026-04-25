@@ -79,33 +79,13 @@ function playSound(type) {
     }
 }
 
-// --- LES 25 LIGNES DE PAIEMENT (Basées sur ta capture) ---
+// --- LES 25 LIGNES DE PAIEMENT ---
 const PAYLINES = [
-    [1, 1, 1, 1, 1], // Ligne 1 : Tout au milieu
-    [0, 0, 0, 0, 0], // Ligne 2 : Tout en haut
-    [2, 2, 2, 2, 2], // Ligne 3 : Tout en bas
-    [0, 1, 2, 1, 0], // Ligne 4 : V
-    [2, 1, 0, 1, 2], // Ligne 5 : V inversé
-    [0, 0, 1, 0, 0], // Ligne 6
-    [2, 2, 1, 2, 2], // Ligne 7
-    [1, 0, 0, 0, 1], // Ligne 8
-    [1, 2, 2, 2, 1], // Ligne 9
-    [1, 0, 1, 0, 1], // Ligne 10
-    [1, 2, 1, 2, 1], // Ligne 11
-    [0, 1, 0, 1, 0], // Ligne 12
-    [2, 1, 2, 1, 2], // Ligne 13
-    [1, 1, 0, 1, 1], // Ligne 14
-    [1, 1, 2, 1, 1], // Ligne 15
-    [0, 2, 2, 2, 0], // Ligne 16
-    [2, 0, 0, 0, 2], // Ligne 17
-    [0, 1, 2, 2, 2], // Ligne 18
-    [2, 1, 0, 0, 0], // Ligne 19
-    [0, 2, 0, 2, 0], // Ligne 20
-    [2, 0, 2, 0, 2], // Ligne 21
-    [0, 0, 2, 0, 0], // Ligne 22
-    [2, 2, 0, 2, 2], // Ligne 23
-    [0, 2, 1, 2, 0], // Ligne 24
-    [2, 0, 1, 0, 2]  // Ligne 25
+    [1, 1, 1, 1, 1], [0, 0, 0, 0, 0], [2, 2, 2, 2, 2], [0, 1, 2, 1, 0], [2, 1, 0, 1, 2],
+    [0, 0, 1, 0, 0], [2, 2, 1, 2, 2], [1, 0, 0, 0, 1], [1, 2, 2, 2, 1], [1, 0, 1, 0, 1],
+    [1, 2, 1, 2, 1], [0, 1, 0, 1, 0], [2, 1, 2, 1, 2], [1, 1, 0, 1, 1], [1, 1, 2, 1, 1],
+    [0, 2, 2, 2, 0], [2, 0, 0, 0, 2], [0, 1, 2, 2, 2], [2, 1, 0, 0, 0], [0, 2, 0, 2, 0],
+    [2, 0, 2, 0, 2], [0, 0, 2, 0, 0], [2, 2, 0, 2, 2], [0, 2, 1, 2, 0], [2, 0, 1, 0, 2]
 ];
 
 // --- HAUTE VOLATILITÉ : Multiplicateurs de la mise TOTALE ---
@@ -178,7 +158,7 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-document.getElementById('btn-claim-bonus').addEventListener('click', async () => { /* Bonus inchangé */
+document.getElementById('btn-claim-bonus').addEventListener('click', async () => {
     const user = auth.currentUser;
     const userRef = doc(db, "users", user.uid);
     const userSnap = await getDoc(userRef);
@@ -194,7 +174,7 @@ document.getElementById('btn-claim-bonus').addEventListener('click', async () =>
 document.getElementById('btn-open-slot').addEventListener('click', () => { document.getElementById('casino-section').classList.add('hidden'); document.getElementById('slot-section').classList.remove('hidden'); });
 document.getElementById('btn-back-lobby').addEventListener('click', () => { document.getElementById('slot-section').classList.add('hidden'); document.getElementById('casino-section').classList.remove('hidden'); balanceDisplay.textContent = currentBalance; stopAutoSpin(); });
 
-// --- NOUVELLE GESTION DES SYMBOLES GAGNANTS (Glow Vert + Respiration) ---
+// --- GESTION DES SYMBOLES GAGNANTS (Glow Vert + Respiration) ---
 function drawWinningSymbols(symbolCoords) {
     // 1. On assombrit tous les symboles avant d'illuminer la nouvelle ligne
     for(let c=0; c<5; c++) {
@@ -208,15 +188,15 @@ function drawWinningSymbols(symbolCoords) {
     symbolCoords.forEach(p => {
         const symEl = document.getElementById(`sym-${p.col}-${p.row}`);
         if(symEl) {
-            symEl.classList.remove('dimmed'); // On enlève le voile sombre
-            symEl.classList.add('winning-sym'); // On ajoute l'animation CSS (Glow Vert + 3D)
+            symEl.classList.remove('dimmed');
+            symEl.classList.add('winning-sym');
         }
     });
 }
 
 // --- FONCTIONS AUTOSPIN ---
 btnAutoSpin.addEventListener('click', () => {
-    initAudio(); // Pour activer le son au premier clic
+    initAudio(); 
     autoSpinsRemaining = parseInt(autoSpinCountSelect.value);
     isAutoSpinning = true;
     btnAutoSpin.classList.add('hidden');
@@ -235,7 +215,7 @@ function stopAutoSpin() {
 
 // --- LE MOTEUR DU JEU ---
 btnSpin.addEventListener('click', () => {
-    initAudio(); // Pour activer le son au premier clic
+    initAudio(); 
     stopAutoSpin(); 
     if (!isSpinning) triggerSpin();
 });
@@ -254,7 +234,6 @@ async function triggerSpin() {
     btnSpin.disabled = true;
     betAmountInput.disabled = true;
     
-    // Nettoyage de l'écran précédent
     clearTimeout(winLineTimer);
     
     for(let c=0; c<5; c++) {
@@ -281,18 +260,14 @@ async function triggerSpin() {
         }
     }
 
-    // Le bruit de rotation pendant que ça tourne (cliquetis léger)
     let spinTickInterval = setInterval(() => playSound('spin'), 120);
 
-    // ANIMATION VISUELLE CORRIGÉE & RALENTIE
     for (let col = 0; col < 5; col++) {
         const strip = document.getElementById(`strip-${col}`);
         
-        // CORRECTION DU BUG VISUEL : On enlève les IDs des anciens symboles pour ne pas les cibler
         let oldHTML = strip.innerHTML.replace(/id="sym-\d-\d"/g, '');
         
         let blurHTML = '';
-        // Plus le rouleau est loin, plus on met de symboles flous pour rallonger l'animation
         let blurCount = 15 + (col * 5); 
         for(let i=0; i<blurCount; i++) {
             blurHTML += `<div class="symbol"><img src="slot_symbols/${SYM_CONFIG[reelTape[Math.floor(Math.random() * reelTape.length)]].file}"></div>`;
@@ -307,38 +282,31 @@ async function triggerSpin() {
         strip.innerHTML = oldHTML + blurHTML + finalHTML;
         strip.offsetHeight; 
 
-        // SUSPENSE : Le temps d'arrêt augmente de 0.5s par rouleau
         const stopTime = 1.0 + (col * 0.5); 
         strip.style.transition = `transform ${stopTime}s cubic-bezier(0.1, 0.7, 0.1, 1)`;
-        // On décale la bande de toute la hauteur générée (3 finaux +blurCount) * 80px
         strip.style.transform = `translateY(-${(3 + blurCount) * 80}px)`;
         
-        // Nettoyage après l'animation de la colonne
         setTimeout(() => {
             strip.style.transition = 'none';
             strip.style.transform = `translateY(0px)`;
-            strip.innerHTML = finalHTML; // On ne garde que les 3 bons finaux
-            playSound('stop'); // Le clac lourd de fin de rouleau
+            strip.innerHTML = finalHTML;
+            playSound('stop'); 
         }, stopTime * 1000);
     }
 
-    // Arrêt du son de rotation juste avant la fin de l'animation
     setTimeout(() => clearInterval(spinTickInterval), 2900);
 
-    // CALCUL DES GAINS CORRIGÉ & RETARDÉ (3.2 secondes plus tard, après le dernier rouleau)
     setTimeout(async () => {
         let totalWin = 0;
         let scatterCount = 0;
         let allWinningPaths = [];
         
-        // 1. Comptage des Scatters
         for (let c = 0; c < 5; c++) {
             for (let r = 0; r < 3; r++) {
                 if (finalGrid[c][r] === 'scatter') scatterCount++;
             }
         }
 
-        // 2. Vérification des 25 Lignes (Uniquement de gauche à droite)
         PAYLINES.forEach(line => {
             let firstSym = null;
             let matchCount = 0;
@@ -348,7 +316,7 @@ async function triggerSpin() {
                 let row = line[col];
                 let sym = finalGrid[col][row];
 
-                if (sym === 'scatter') break; // Le scatter ne paie pas sur les lignes
+                if (sym === 'scatter') break; 
 
                 if (firstSym === null) {
                     if (sym !== 'wild') firstSym = sym;
@@ -359,12 +327,11 @@ async function triggerSpin() {
                         matchCount++;
                         winningSymbolsCoords.push({col, row});
                     } else {
-                        break; // La chaîne de gauche à droite est cassée
+                        break; 
                     }
                 }
             }
 
-            // Cas full wilds (on considère que c'est le symbole le plus payant, s67)
             if (firstSym === null && matchCount > 0) firstSym = 's67'; 
 
             if (matchCount >= 3 && firstSym) {
@@ -378,7 +345,6 @@ async function triggerSpin() {
             }
         });
 
-        // Application FS
         if (freeSpins > 0) { totalWin *= 2; freeSpins--; }
 
         if (scatterCount === 3) freeSpins += 10;
@@ -394,13 +360,12 @@ async function triggerSpin() {
             slotMessage.textContent = `SUPER ! Gain : +${totalWin} Brundles !`;
             slotMessage.style.color = "#2ecc71";
             
-            // Lancer l'animation des symboles gagnants de manière cyclique
             let pathIndex = 0;
             function showNextWinningSet() {
-                if(!isSpinning && allWinningPaths.length > 0) { // On stoppe si on a relancé
+                if(!isSpinning && allWinningPaths.length > 0) { 
                     drawWinningSymbols(allWinningPaths[pathIndex]);
                     pathIndex = (pathIndex + 1) % allWinningPaths.length;
-                    winLineTimer = setTimeout(showNextWinningSet, 1200); // On boucle toutes les 1.2s
+                    winLineTimer = setTimeout(showNextWinningSet, 1200); 
                 }
             }
             showNextWinningSet();
@@ -418,13 +383,11 @@ async function triggerSpin() {
         btnSpin.disabled = false;
         betAmountInput.disabled = false;
         
-        // Relance Auto ou FS
         if (freeSpins > 0 || isAutoSpinning) {
             if (isAutoSpinning && freeSpins === 0) autoSpinsRemaining--;
             if (isAutoSpinning && autoSpinsRemaining <= 0 && freeSpins === 0) stopAutoSpin();
-            // On attend plus longtemps s'il y a des symboles à faire briller
             else setTimeout(triggerSpin, totalWin > 0 ? 2500 : 800); 
         }
 
-    }, 3200); // Temps d'attente max d'animation (1 + 4*0.5s + marge)
+    }, 3200); 
 }
