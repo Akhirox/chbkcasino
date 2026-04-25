@@ -34,56 +34,44 @@
         <h3>Jeux disponibles</h3>
         <div class="games-menu">
             <button id="btn-open-slot" class="btn btn-game active-game">🎰 Machine à sous</button>
-            <button class="btn btn-game" disabled>🎡 Roulette (Bientôt)</button>
+            <button id="btn-open-roulette" class="btn btn-game active-game" style="border-color: #27ae60;">🎡 Roulette</button>
             <button class="btn btn-game" disabled>🃏 Blackjack (Bientôt)</button>
         </div>
     </div>
 
     <div id="slot-section" class="hidden">
         <div class="slot-layout">
-            
             <div class="left-column">
-                <button id="btn-back-lobby" class="btn-small" style="margin-bottom: 15px; display: block; width: 100%; padding: 10px;">⬅ Retour au Lobby</button>
-                
+                <button class="btn-back-lobby btn-small" style="margin-bottom: 15px; display: block; width: 100%; padding: 10px;">⬅ Retour au Lobby</button>
+                <div id="win-display-section" class="paytable-section hidden" style="margin-bottom: 15px; border-color: #2ecc71;">
+                    <h3 style="color: #2ecc71;">Lignes Gagnantes</h3>
+                    <div id="win-display-content" class="win-display-scroll"></div>
+                </div>
                 <div class="paytable-section">
                     <h3>Gains (Mise: <span id="pt-bet-display">50</span>)</h3>
                     <div id="paytable-content" class="paytable-grid"></div>
-                    <div class="paytable-rules">
-                        <div class="special-symbol-rule">
-                            <img src="slot_symbols/slot_wild.png" class="paytable-sym">
-                            <p><b>WILD :</b> Remplace tout (sauf Scatter).</p>
-                        </div>
-                        <div class="special-symbol-rule">
-                            <img src="slot_symbols/slot_chbk.png" class="paytable-sym">
-                            <p><b>CHBK SCATTER :</b> <br>3 = 10 FS | 4 = 20 FS | 5 = 30 FS<br>(Gains X2 pendant les FS)</p>
-                        </div>
-                    </div>
                 </div>
             </div>
 
             <div class="slot-machine-wrapper">
                 <div class="slot-header">
                     <h2>CHBK Slot (20 Lignes)</h2>
-                    <div class="live-balance" style="margin-left: auto;">Solde : <span id="slot-brundle-balance">...</span></div>
+                    <div class="live-balance">Solde : <span id="slot-brundle-balance">...</span></div>
                 </div>
-                
                 <div class="slot-machine dark-theme">
                     <div class="slot-window" id="slot-window">
-                        
                         <div id="big-win-overlay" class="hidden">
                             <div class="win-text-container">
                                 <h3>JACKPOT !</h3>
                                 <p id="big-win-amount">+0</p>
                             </div>
                         </div>
-
                         <div class="reel-container"><div class="reel-strip" id="strip-0"></div></div>
                         <div class="reel-container"><div class="reel-strip" id="strip-1"></div></div>
                         <div class="reel-container"><div class="reel-strip" id="strip-2"></div></div>
                         <div class="reel-container"><div class="reel-strip" id="strip-3"></div></div>
                         <div class="reel-container"><div class="reel-strip" id="strip-4"></div></div>
                     </div>
-                    
                     <div class="master-controls">
                         <div class="bet-panel">
                             <div class="bet-display">
@@ -105,7 +93,6 @@
                                 <button class="btn-bet" data-val="+1000">+1k</button>
                             </div>
                         </div>
-
                         <div class="action-panel">
                             <button id="btn-spin" class="btn spin-btn">JOUER</button>
                             <div class="auto-spin-group">
@@ -120,24 +107,48 @@
                             </div>
                         </div>
                     </div>
-                    
                     <p id="freespin-message" class="fs-msg"></p>
                     <p id="slot-message" class="slot-msg">Prêt à tenter ta chance ?</p>
                 </div>
             </div>
-
-            <div class="right-column">
-                <div id="win-display-section" class="paytable-section" style="border-color: #2ecc71; min-height: 400px;">
-                    <h3 style="color: #2ecc71;">Lignes Gagnantes</h3>
-                    <div id="win-display-content" class="win-display-scroll">
-                        <p class="empty-win-msg">En attente d'un gain...</p>
-                    </div>
-                </div>
-            </div>
-
         </div>
     </div>
 
-    <script type="module" src="app.js?v=20"></script>
+    <div id="roulette-section" class="hidden">
+        <button class="btn-back-lobby btn-small" style="margin-bottom: 20px;">⬅ Retour au Lobby</button>
+        
+        <div class="roulette-layout">
+            <div class="slot-header" style="max-width: 800px; margin: 0 auto 15px auto;">
+                <h2>CHBK Roulette</h2>
+                <div class="live-balance" style="background: #27ae60;">Solde : <span id="roulette-brundle-balance">...</span></div>
+            </div>
+
+            <div class="roulette-game-area">
+                <div class="roulette-result-display" id="roulette-result">
+                    <span id="roulette-number">?</span>
+                </div>
+                <p id="roulette-message" style="font-weight: bold; margin-bottom: 20px; color: #aaa;">Faites vos jeux...</p>
+
+                <div class="roulette-table" id="roulette-board">
+                    </div>
+
+                <div class="roulette-controls">
+                    <div class="chip-selector">
+                        <div class="chip chip-10 active" data-val="10">10</div>
+                        <div class="chip chip-50" data-val="50">50</div>
+                        <div class="chip chip-100" data-val="100">100</div>
+                        <div class="chip chip-500" data-val="500">500</div>
+                        <div class="chip chip-1000" data-val="1000">1k</div>
+                    </div>
+                    <div class="roulette-actions">
+                        <button id="btn-clear-roulette" class="btn btn-secondary">Annuler (0)</button>
+                        <button id="btn-spin-roulette" class="btn spin-btn" style="background-color: #27ae60; box-shadow: 0 4px 0 #1e8449;">LANCER LA BILLE !</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="app.js?v=22"></script>
 </body>
 </html>
