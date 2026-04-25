@@ -3,15 +3,81 @@ body {
     color: #ffffff;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     text-align: center;
-    padding-top: 50px;
+    padding: 20px;
     margin: 0;
 }
 
-h1 {
-    color: #f1c40f; /* Couleur Or */
-    text-transform: uppercase;
-    letter-spacing: 2px;
+h1 { color: #f1c40f; text-transform: uppercase; letter-spacing: 2px; }
+.hidden { display: none !important; }
+
+/* Boutons classiques */
+input { padding: 10px; margin: 5px; border-radius: 5px; border: none; background-color: #333; color: white; text-align: center; }
+.btn { padding: 10px 20px; margin: 5px; border-radius: 5px; border: none; background-color: #f1c40f; color: #121212; font-weight: bold; cursor: pointer; transition: 0.2s; }
+.btn:hover { background-color: #d4ac0d; }
+.btn-secondary { background-color: #3498db; color: white; }
+.btn-secondary:hover { background-color: #2980b9; }
+.btn-small { padding: 5px 10px; background-color: #e74c3c; color: white; border: none; border-radius: 3px; cursor: pointer; }
+.error-msg { color: #e74c3c; font-size: 0.9em; }
+
+/* Lobby */
+.balance-board { background-color: #2c3e50; padding: 15px; border-radius: 10px; display: inline-block; margin: 20px 0; border: 2px solid #f1c40f; }
+.btn-game { display: block; width: 200px; margin: 10px auto; background-color: #555; color: #aaa; cursor: not-allowed; }
+.active-game { background-color: #9b59b6; color: white; cursor: pointer; border: 2px solid #8e44ad; }
+.active-game:hover { background-color: #8e44ad; }
+
+/* --- MACHINE À SOUS --- */
+.slot-machine {
+    background-color: #222;
+    padding: 20px;
+    border-radius: 15px;
+    border: 4px solid #f1c40f;
+    display: inline-block;
+    box-shadow: 0 0 20px rgba(241, 196, 15, 0.3);
 }
-.hidden {
-    display: none !important;
+
+.reels {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    background-color: #111;
+    padding: 15px;
+    border-radius: 10px;
+    border-top: 3px solid #000;
+    border-bottom: 3px solid #333;
+}
+
+.reel {
+    width: 60px;
+    height: 80px;
+    background-color: #fff;
+    color: #000;
+    font-size: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 5px;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+}
+
+.slot-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+}
+
+.spin-btn {
+    background-color: #e74c3c;
+    color: white;
+    font-size: 1.2em;
+    padding: 10px 30px;
+}
+.spin-btn:hover { background-color: #c0392b; }
+
+.slot-msg {
+    margin-top: 15px;
+    font-size: 1.1em;
+    font-weight: bold;
+    min-height: 25px;
 }

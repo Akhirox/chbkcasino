@@ -1,10 +1,7 @@
-// Importation des outils Firebase
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-// NOUVEAU : Importation des outils de Base de données (Firestore)
 import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// Ta configuration Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyBXdrKA_9cOVjkadt0vPUfZtFoSmo_urtU",
   authDomain: "chbkcasino.firebaseapp.com",
@@ -14,103 +11,163 @@ const firebaseConfig = {
   appId: "1:782505372980:web:daab84c9f8ae2367d7c961"
 };
 
-// Initialisation
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app); // On lance la base de données
+const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
-// Éléments HTML
+// --- Éléments HTML ---
 const loginSection = document.getElementById('login-section');
 const casinoSection = document.getElementById('casino-section');
+const slotSection = document.getElementById('slot-section');
 const authMessage = document.getElementById('auth-message');
 const playerNameDisplay = document.getElementById('player-name');
 const balanceDisplay = document.getElementById('brundle-balance');
 const btnClaimBonus = document.getElementById('btn-claim-bonus');
 const bonusMessage = document.getElementById('bonus-message');
 
-// --- CONNEXION / DÉCONNEXION ---
-document.getElementById('btn-google-login').addEventListener('click', () => {
-    authMessage.textContent = "Ouverture de Google...";
-    signInWithPopup(auth, provider).catch((error) => {
-        authMessage.textContent = "Erreur : La connexion a échoué.";
-        console.error(error);
-    });
-});
+// Éléments Slot
+const btnOpenSlot = document.getElementById('btn-open-slot');
+const btnBackLobby = document.getElementById('btn-back-lobby');
+const btnSpin = document.getElementById('btn-spin');
+const betAmountInput = document.getElementById('bet-amount');
+const slotMessage = document.getElementById('slot-message');
+const reelsUI = [
+    document.getElementById('reel-1'),
+    document.getElementById('reel-2'),
+    document.getElementById('reel-3'),
+    document.getElementById('reel-4'),
+    document.getElementById('reel-5')
+];
 
-document.getElementById('btn-logout').addEventListener('click', () => {
-    signOut(auth);
-});
+let currentBalance = 0; // On stocke le solde localement pour jouer vite
 
-// --- SURVEILLANCE DE L'ÉTAT DU JOUEUR ET CHARGEMENT DES DONNÉES ---
+// --- AUTHENTIFICATION ---
+document.getElementById('btn-google-login').addEventListener('click', () => signInWithPopup(auth, provider));
+document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
+
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        // Connecté : Interface
         loginSection.classList.add('hidden');
         casinoSection.classList.remove('hidden');
+        slotSection.classList.add('hidden');
         playerNameDisplay.textContent = user.displayName;
-        balanceDisplay.textContent = "..."; // En attente du serveur
-        bonusMessage.textContent = "";
-
-        // On cherche le joueur dans la base de données
+        
         const userRef = doc(db, "users", user.uid);
         const userSnap = await getDoc(userRef);
 
         if (!userSnap.exists()) {
-            // C'EST SA PREMIÈRE CONNEXION ! On lui crée un profil.
-            await setDoc(userRef, {
-                name: user.displayName,
-                balance: 0,
-                lastClaimDate: null // Jamais réclamé
-            });
-            balanceDisplay.textContent = "0";
+            await setDoc(userRef, { name: user.displayName, balance: 0, lastClaimDate: null });
+            currentBalance = 0;
         } else {
-            // C'EST UN HABITUÉ ! On affiche son solde.
-            const userData = userSnap.data();
-            balanceDisplay.textContent = userData.balance;
+            currentBalance = userSnap.data().balance;
         }
-
+        balanceDisplay.textContent = currentBalance;
     } else {
-        // Déconnecté
         loginSection.classList.remove('hidden');
         casinoSection.classList.add('hidden');
+        slotSection.classList.add('hidden');
     }
 });
 
-// --- LE BONUS QUOTIDIEN (LES 2500 BRUNDLES) ---
+// --- BONUS QUOTIDIEN ---
 btnClaimBonus.addEventListener('click', async () => {
     const user = auth.currentUser;
     if (!user) return;
-
-    btnClaimBonus.disabled = true; // On désactive le bouton le temps de calculer
-    bonusMessage.textContent = "Vérification...";
-    bonusMessage.style.color = "white";
+    btnClaimBonus.disabled = true;
 
     const userRef = doc(db, "users", user.uid);
     const userSnap = await getDoc(userRef);
     const userData = userSnap.data();
-
-    // On récupère la date d'aujourd'hui sous format "AAAA-MM-JJ" (ex: 2024-05-18)
     const today = new Date().toISOString().split('T')[0];
 
     if (userData.lastClaimDate === today) {
-        // Il a déjà réclamé aujourd'hui !
-        bonusMessage.textContent = "Tu as déjà récupéré tes Brundles aujourd'hui ! Reviens demain.";
-        bonusMessage.style.color = "#e74c3c"; // Rouge
+        bonusMessage.textContent = "Tu as déjà récupéré tes Brundles aujourd'hui !";
+        bonusMessage.style.color = "#e74c3c";
     } else {
-        // C'est bon, on lui donne l'argent !
-        const newBalance = userData.balance + 2500;
-        
-        await updateDoc(userRef, {
-            balance: newBalance,
-            lastClaimDate: today
-        });
+        currentBalance += 2500;
+        await updateDoc(userRef, { balance: currentBalance, lastClaimDate: today });
+        balanceDisplay.textContent = currentBalance;
+        bonusMessage.textContent = "Jackpot ! 2500 Brundles ajoutés.";
+        bonusMessage.style.color = "#2ecc71";
+    }
+    btnClaimBonus.disabled = false;
+});
 
-        // On met à jour l'affichage
-        balanceDisplay.textContent = newBalance;
-        bonusMessage.textContent = "Jackpot ! 2500 Brundles ajoutés à ton compte.";
-        bonusMessage.style.color = "#2ecc71"; // Vert
+// --- NAVIGATION CASINO <-> MACHINE A SOUS ---
+btnOpenSlot.addEventListener('click', () => {
+    casinoSection.classList.add('hidden');
+    slotSection.classList.remove('hidden');
+    slotMessage.textContent = "Prêt à tenter ta chance ?";
+});
+
+btnBackLobby.addEventListener('click', () => {
+    slotSection.classList.add('hidden');
+    casinoSection.classList.remove('hidden');
+    balanceDisplay.textContent = currentBalance; // Met à jour le lobby
+});
+
+// --- LOGIQUE DE LA MACHINE À SOUS ---
+// C'est ici que tu pourras mettre tes propres symboles plus tard !
+const symbols = ['🍒', '🍋', '🍉', '🔔', '💎', '👑']; 
+
+btnSpin.addEventListener('click', async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const bet = parseInt(betAmountInput.value);
+    
+    // Vérifications
+    if (isNaN(bet) || bet <= 0) {
+        slotMessage.textContent = "Mise invalide !"; return;
+    }
+    if (bet > currentBalance) {
+        slotMessage.textContent = "Fonds insuffisants !"; return;
     }
 
-    btnClaimBonus.disabled = false; // On réactive le bouton
+    // On bloque le bouton et on déduit la mise locale
+    btnSpin.disabled = true;
+    currentBalance -= bet;
+    slotMessage.textContent = "Ça tourne...";
+    slotMessage.style.color = "white";
+
+    // Animation basique des rouleaux (dure 1 seconde)
+    let spinInterval = setInterval(() => {
+        reelsUI.forEach(reel => {
+            reel.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+        });
+    }, 100);
+
+    // Arrêt de l'animation après 1 seconde et calcul des gains
+    setTimeout(async () => {
+        clearInterval(spinInterval);
+        
+        // Résultats finaux
+        const results = [];
+        for(let i = 0; i < 5; i++) {
+            const randomSymbol = symbols[Math.floor(Math.random() * symbols.length)];
+            results.push(randomSymbol);
+            reelsUI[i].textContent = randomSymbol;
+        }
+
+        // On compte si des symboles sont identiques
+        const counts = {};
+        results.forEach(sym => counts[sym] = (counts[sym] || 0) + 1);
+        const maxMatches = Math.max(...Object.values(counts));
+
+        let winAmount = 0;
+        if (maxMatches === 5) { winAmount = bet * 50; slotMessage.textContent = `JACKPOT MEGA ! +${winAmount} Brundles !`; slotMessage.style.color = "#f1c40f"; }
+        else if (maxMatches === 4) { winAmount = bet * 10; slotMessage.textContent = `SUPER GAIN ! +${winAmount} Brundles !`; slotMessage.style.color = "#2ecc71"; }
+        else if (maxMatches === 3) { winAmount = bet * 3; slotMessage.textContent = `Gagné ! +${winAmount} Brundles !`; slotMessage.style.color = "#3498db"; }
+        else { slotMessage.textContent = "Perdu... Essaie encore !"; slotMessage.style.color = "#e74c3c"; }
+
+        // Ajout du gain au solde local
+        currentBalance += winAmount;
+
+        // MISE À JOUR DE FIREBASE UNE SEULE FOIS (Optimisation)
+        const userRef = doc(db, "users", user.uid);
+        await updateDoc(userRef, { balance: currentBalance });
+
+        btnSpin.disabled = false;
+    }, 1000);
 });

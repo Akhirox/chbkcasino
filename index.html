@@ -31,14 +31,36 @@
             <p id="bonus-message" style="font-size: 0.9em; margin-top: 5px;"></p>
         </div>
 
-        <h3>Jeux disponibles (Bientôt)</h3>
+        <h3>Jeux disponibles</h3>
         <div class="games-menu">
-            <button class="btn btn-game" disabled>🎰 Machine à sous</button>
-            <button class="btn btn-game" disabled>🎡 Roulette</button>
-            <button class="btn btn-game" disabled>🃏 Blackjack</button>
+            <button id="btn-open-slot" class="btn btn-game active-game">🎰 Machine à sous</button>
+            <button class="btn btn-game" disabled>🎡 Roulette (Bientôt)</button>
+            <button class="btn btn-game" disabled>🃏 Blackjack (Bientôt)</button>
         </div>
     </div>
 
-    <script type="module" src="app.js"></script>
+    <div id="slot-section" class="hidden">
+        <button id="btn-back-lobby" class="btn-small" style="margin-bottom: 20px;">⬅ Retour au Lobby</button>
+        <h2>Machine à Sous (5 Rouleaux)</h2>
+        
+        <div class="slot-machine">
+            <div class="reels">
+                <div class="reel" id="reel-1">🍒</div>
+                <div class="reel" id="reel-2">🍒</div>
+                <div class="reel" id="reel-3">🍒</div>
+                <div class="reel" id="reel-4">🍒</div>
+                <div class="reel" id="reel-5">🍒</div>
+            </div>
+            
+            <div class="slot-controls">
+                <label for="bet-amount">Mise :</label>
+                <input type="number" id="bet-amount" value="100" min="10" step="10">
+                <button id="btn-spin" class="btn spin-btn">JOUER</button>
+            </div>
+            <p id="slot-message" class="slot-msg">Prêt à tenter ta chance ?</p>
+        </div>
+    </div>
+
+    <script type="module" src="app.js?v=3"></script>
 </body>
 </html>
