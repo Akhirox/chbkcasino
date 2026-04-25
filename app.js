@@ -42,7 +42,6 @@ function initAudio() {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state === 'suspended') audioCtx.resume();
 }
-// On initialise le son au premier clic n'importe où sur la page (sécurité navigateur)
 document.body.addEventListener('click', initAudio, { once: true });
 
 function playSound(type) {
@@ -103,11 +102,15 @@ const SYM_CONFIG = {
     scatter: { file: 'slot_chbk.png',    payout: [0, 0, 0],      color: '#e74c3c' } 
 };
 
-// Bande RTP
+// Bande RTP v12 : RARETÉ FIXEE (Beaucoup de fruits, Wild et Scatter très rares)
 const reelTape = [
-    'cherry','cherry','cherry','lemon','lemon','lemon', 'orange','orange','orange',
-    'grapes','grapes', 'prunes','prunes', 'star','star', 'bell','bell', 
-    'diamond', 's67', 'wild','wild', 'scatter','scatter'
+    'cherry','cherry','cherry','cherry','cherry',
+    'lemon','lemon','lemon','lemon','lemon',
+    'orange','orange','orange','orange',
+    'grapes','grapes','grapes',
+    'prunes','prunes',
+    'star','bell', 
+    'diamond', 's67', 'wild', 'scatter'
 ];
 
 function updatePaytable() {
@@ -262,6 +265,7 @@ async function triggerSpin() {
 
     let spinTickInterval = setInterval(() => playSound('spin'), 120);
 
+    // Animation de rotation
     for (let col = 0; col < 5; col++) {
         const strip = document.getElementById(`strip-${col}`);
         
@@ -301,12 +305,14 @@ async function triggerSpin() {
         let scatterCount = 0;
         let allWinningPaths = [];
         
+        // 1. Comptage des Scatters
         for (let c = 0; c < 5; c++) {
             for (let r = 0; r < 3; r++) {
                 if (finalGrid[c][r] === 'scatter') scatterCount++;
             }
         }
 
+        // 2. Vérification des 25 Lignes
         PAYLINES.forEach(line => {
             let firstSym = null;
             let matchCount = 0;
@@ -345,6 +351,7 @@ async function triggerSpin() {
             }
         });
 
+        // Application FS
         if (freeSpins > 0) { totalWin *= 2; freeSpins--; }
 
         if (scatterCount === 3) freeSpins += 10;
@@ -360,6 +367,7 @@ async function triggerSpin() {
             slotMessage.textContent = `SUPER ! Gain : +${totalWin} Brundles !`;
             slotMessage.style.color = "#2ecc71";
             
+            // Lancer l'animation des symboles gagnants
             let pathIndex = 0;
             function showNextWinningSet() {
                 if(!isSpinning && allWinningPaths.length > 0) { 
@@ -383,6 +391,7 @@ async function triggerSpin() {
         btnSpin.disabled = false;
         betAmountInput.disabled = false;
         
+        // Relance Auto ou FS
         if (freeSpins > 0 || isAutoSpinning) {
             if (isAutoSpinning && freeSpins === 0) autoSpinsRemaining--;
             if (isAutoSpinning && autoSpinsRemaining <= 0 && freeSpins === 0) stopAutoSpin();

@@ -45,11 +45,9 @@ input, select { padding: 8px; border-radius: 5px; border: none; background-color
 
 .symbol { width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
 
-/* --- NOUVELLE ANIMATION DES SYMBOLES GAGNANTS (Glow Vert + Respiration 3D) --- */
+/* --- ANIMATION DES SYMBOLES GAGNANTS (Glow Vert Néon + Respiration 3D) --- */
 .symbol img { width: 65px; height: 65px; object-fit: contain; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.8)); transition: 0.3s; }
-
 .symbol.dimmed { opacity: 0.2; filter: grayscale(100%); transition: 0.3s; }
-
 .symbol.winning-sym { opacity: 1 !important; filter: none !important; z-index: 5; position: relative; }
 
 .symbol.winning-sym img {
@@ -63,12 +61,11 @@ input, select { padding: 8px; border-radius: 5px; border: none; background-color
     100% { transform: scale(1.0); filter: drop-shadow(0 0 10px #2ecc71) drop-shadow(0 0 20px #2ecc71); }
 }
 
-/* CONTROLS - CORRIGÉS */
+/* CONTROLS (v7 fix) */
 .slot-controls { 
-    display: flex; justify-content: center; align-items: center; gap: 15px; 
-    background: #1a1a1a; padding: 15px; border-radius: 10px; border: 1px solid #333; 
-    flex-wrap: wrap; /* LA SOLUTION MAGIQUE EST ICI */
-    width: 100%; box-sizing: border-box; margin: 0 auto;
+    display: flex; justify-content: center; align-items: center; gap: 10px; 
+    background: #1a1a1a; padding: 15px 10px; border-radius: 10px; border: 1px solid #333; 
+    flex-wrap: nowrap; width: 100%; max-width: 440px; box-sizing: border-box; margin: 0 auto;
 }
 .control-group { display: flex; align-items: center; gap: 5px; flex-shrink: 0;}
 .spin-btn { background-color: #e74c3c; color: white; font-size: 1.2em; padding: 12px 25px; box-shadow: 0 4px 0 #c0392b; flex-shrink: 0;}
