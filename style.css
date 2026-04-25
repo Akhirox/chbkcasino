@@ -1,9 +1,9 @@
 body { background-color: #121212; color: #ffffff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 20px; margin: 0; }
 h1 { color: #f1c40f; text-transform: uppercase; letter-spacing: 2px; }
 .hidden { display: none !important; }
+.highlight-text { color: #f1c40f; font-weight: bold; }
 
-/* Boutons classiques */
-input { padding: 10px; margin: 5px; border-radius: 5px; border: none; background-color: #333; color: white; text-align: center; font-weight: bold;}
+input, select { padding: 8px; border-radius: 5px; border: none; background-color: #333; color: white; text-align: center; font-weight: bold; font-family: inherit;}
 .btn { padding: 10px 20px; margin: 5px; border-radius: 5px; border: none; background-color: #f1c40f; color: #121212; font-weight: bold; cursor: pointer; transition: 0.2s; }
 .btn:hover { background-color: #d4ac0d; }
 .btn-secondary { background-color: #3498db; color: white; }
@@ -11,56 +11,59 @@ input { padding: 10px; margin: 5px; border-radius: 5px; border: none; background
 .btn-small { padding: 5px 10px; background-color: #e74c3c; color: white; border: none; border-radius: 3px; cursor: pointer; }
 .error-msg { color: #e74c3c; font-size: 0.9em; }
 
-/* Lobby */
 .balance-board { background-color: #2c3e50; padding: 15px; border-radius: 10px; display: inline-block; margin: 20px 0; border: 2px solid #f1c40f; }
 .btn-game { display: block; width: 200px; margin: 10px auto; background-color: #555; color: #aaa; cursor: not-allowed; }
 .active-game { background-color: #9b59b6; color: white; cursor: pointer; border: 2px solid #8e44ad; }
 .active-game:hover { background-color: #8e44ad; }
 
-/* --- MACHINE À SOUS 5x3 --- */
-.slot-machine {
-    background-color: #222; padding: 20px; border-radius: 15px; border: 4px solid #f1c40f; 
-    display: inline-block; box-shadow: 0 0 20px rgba(241, 196, 15, 0.3);
-}
+/* --- SLOT LAYOUT (MACHINE + PAYTABLE) --- */
+.slot-layout { display: flex; justify-content: center; align-items: flex-start; gap: 30px; flex-wrap: wrap; margin-top: 20px; }
+
+/* PAYTABLE */
+.paytable-section { background-color: #1a1a1a; padding: 15px; border-radius: 10px; border: 2px solid #555; width: 280px; text-align: left; }
+.paytable-section h3 { margin-top: 0; color: #f1c40f; text-align: center; border-bottom: 1px solid #333; padding-bottom: 10px;}
+.paytable-grid { display: flex; flex-direction: column; gap: 8px; }
+.paytable-row { display: flex; align-items: center; justify-content: space-between; background: #222; padding: 5px 10px; border-radius: 5px;}
+.paytable-sym { width: 30px; height: 30px; object-fit: contain; }
+.paytable-vals { font-size: 0.85em; color: #ccc; }
+.paytable-rules { margin-top: 15px; font-size: 0.8em; color: #999; text-align: center; background: #111; padding: 10px; border-radius: 5px;}
+
+/* DARK THEME MACHINE */
+.slot-machine-wrapper { display: flex; flex-direction: column; align-items: center; }
+.slot-machine.dark-theme { background-color: #0a0a0a; padding: 25px; border-radius: 15px; border: 3px solid #f1c40f; box-shadow: 0 0 30px rgba(241, 196, 15, 0.2); }
 
 .slot-window {
     display: flex; justify-content: center; gap: 10px; margin-bottom: 20px;
-    background-color: #111; padding: 10px; border-radius: 10px;
-    border-top: 3px solid #000; border-bottom: 3px solid #333;
-    height: 240px; /* 3 symboles de 80px */
-    overflow: hidden; /* Cache ce qui dépasse (très important pour l'animation) */
+    background-color: #000; padding: 10px; border-radius: 10px;
+    border-top: 4px solid #222; border-bottom: 4px solid #444;
+    height: 240px; overflow: hidden; position: relative;
+    width: 440px; /* 5x80px + 4x10px gap */
+    box-sizing: border-box;
 }
 
-.reel-container {
-    width: 80px; height: 240px; background-color: #fff;
-    border-radius: 5px; box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
-}
+/* OVERLAY SVG DES LIGNES GAGNANTES */
+.win-lines-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+.win-line { fill: none; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0px 0px 8px currentColor); }
 
-.reel-strip {
-    display: flex; flex-direction: column; width: 100%;
-    /* L'animation (transition) sera injectée par le JavaScript */
-}
+.reel-container { width: 80px; height: 240px; background-color: #151515; border-radius: 5px; box-shadow: inset 0 0 20px rgba(0,0,0,1); }
+.reel-strip { display: flex; flex-direction: column; width: 100%; }
 
-.symbol {
-    width: 80px; height: 80px; display: flex;
-    align-items: center; justify-content: center;
-    border-bottom: 1px solid rgba(0,0,0,0.1); box-sizing: border-box;
-}
+.symbol { width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
+.symbol.dimmed { opacity: 0.2; filter: grayscale(100%); transition: 0.3s; }
+.symbol img { width: 65px; height: 65px; object-fit: contain; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.8)); }
+.symbol.winning-sym img { transform: scale(1.15); filter: drop-shadow(0 0 10px #f1c40f); transition: 0.3s; z-index: 5; position: relative; }
 
-.symbol img {
-    width: 65px; height: 65px; object-fit: contain;
-    filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.4));
-}
+.slot-controls { display: flex; justify-content: center; align-items: center; gap: 15px; background: #1a1a1a; padding: 15px; border-radius: 10px; border: 1px solid #333; flex-wrap: wrap;}
+.control-group { display: flex; align-items: center; gap: 5px; }
 
-.slot-controls { display: flex; justify-content: center; align-items: center; gap: 15px; }
-.spin-btn { background-color: #e74c3c; color: white; font-size: 1.2em; padding: 10px 30px; }
-.spin-btn:hover { background-color: #c0392b; }
-.spin-btn:disabled { background-color: #555; cursor: not-allowed; }
+.spin-btn { background-color: #e74c3c; color: white; font-size: 1.2em; padding: 12px 30px; box-shadow: 0 4px 0 #c0392b;}
+.spin-btn:hover { background-color: #c0392b; transform: translateY(2px); box-shadow: 0 2px 0 #922b21;}
+.spin-btn:disabled { background-color: #555; box-shadow: 0 4px 0 #333; cursor: not-allowed; }
+
+.auto-btn { background-color: #3498db; } .auto-btn:hover { background-color: #2980b9; }
+.stop-btn { background-color: #e67e22 !important; } .stop-btn:hover { background-color: #d35400 !important; }
 
 .slot-msg { margin-top: 10px; font-size: 1.1em; font-weight: bold; min-height: 25px; }
 .fs-msg { color: #9b59b6; font-weight: bold; font-size: 1.2em; margin-top: 10px; text-transform: uppercase; animation: pulse 1s infinite alternate;}
 
-@keyframes pulse {
-    0% { transform: scale(1); text-shadow: 0 0 5px #9b59b6; }
-    100% { transform: scale(1.05); text-shadow: 0 0 15px #9b59b6; }
-}
+@keyframes pulse { 0% { transform: scale(1); text-shadow: 0 0 5px #9b59b6; } 100% { transform: scale(1.05); text-shadow: 0 0 15px #9b59b6; } }
