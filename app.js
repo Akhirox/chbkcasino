@@ -26,8 +26,10 @@ const ptBetDisplay = document.getElementById('pt-bet-display');
 const paytableContent = document.getElementById('paytable-content');
 const bigWinOverlay = document.getElementById('big-win-overlay');
 const bigWinAmount = document.getElementById('big-win-amount');
-const lineVisualizer = document.getElementById('line-visualizer');
-const vizGrid = document.querySelector('.viz-grid');
+
+// Les nouveaux éléments pour l'affichage des lignes
+const winDisplaySection = document.getElementById('win-display-section');
+const winDisplayContent = document.getElementById('win-display-content');
 
 const autoSpinCountSelect = document.getElementById('auto-spin-count');
 const btnAutoSpin = document.getElementById('btn-auto-spin');
@@ -40,56 +42,6 @@ let isAutoSpinning = false;
 let autoSpinsRemaining = 0;
 let winLineTimer = null;
 
-// --- LES 21 LIGNES (O=0, M=1, B=2) ---
-const PAYLINES = [
-    [1, 1, 1, 1, 1], // 1: M-M-M-M-M
-    [0, 0, 0, 0, 0], // 2: O-O-O-O-O
-    [2, 2, 2, 2, 2], // 3: B-B-B-B-B
-    [0, 1, 2, 1, 0], // 4: O-M-B-M-O
-    [2, 1, 0, 1, 2], // 5: B-M-O-M-B
-    [0, 0, 1, 0, 0], // 6: O-O-M-O-O
-    [2, 2, 1, 2, 2], // 7: B-B-M-B-B
-    [1, 0, 0, 0, 1], // 8: M-O-O-O-M
-    [1, 2, 2, 2, 1], // 9: M-B-B-B-M
-    [1, 0, 1, 0, 1], // 10: M-O-M-O-M
-    [1, 2, 1, 2, 1], // 11: M-B-M-B-M
-    [0, 1, 0, 1, 0], // 12: O-M-O-M-O
-    [2, 1, 2, 1, 2], // 13: B-M-B-M-B
-    [1, 1, 0, 1, 1], // 14: M-M-O-M-M
-    [1, 1, 2, 1, 1], // 15: M-M-B-M-M
-    [0, 2, 2, 2, 0], // 16: O-B-B-B-O
-    [2, 0, 0, 0, 2], // 17: B-O-O-O-B
-    [0, 1, 2, 2, 2], // 18: O-M-B-B-B
-    [2, 1, 0, 0, 0], // 19: B-M-O-O-O
-    [0, 2, 1, 2, 0], // 20: O-B-M-B-O
-    [2, 0, 1, 0, 2]  // 21: B-O-M-O-B
-];
-
-const SYM_CONFIG = {
-    cherry:  { file: 'slot_cherry.png',  payout: [0.1, 0.3, 1] },
-    lemon:   { file: 'slot_lemon.png',   payout: [0.1, 0.3, 1] },
-    orange:  { file: 'slot_orange.png',  payout: [0.2, 0.5, 2] },
-    grapes:  { file: 'slot_grapes.png',  payout: [0.2, 0.5, 2] },
-    prunes:  { file: 'slot_prunes.png',  payout: [0.3, 0.8, 4] },
-    star:    { file: 'slot_star.png',    payout: [0.5, 2, 10] },
-    bell:    { file: 'slot_bell.png',    payout: [0.5, 2, 10] },
-    diamond: { file: 'slot_diamond.png', payout: [2, 10, 50] },
-    s67:     { file: 'slot_67.png',      payout: [10, 50, 200] },
-    wild:    { file: 'slot_wild.png',    payout: [0, 0, 0] },
-    scatter: { file: 'slot_chbk.png',    payout: [0, 0, 0] } 
-};
-
-const reelTape = [
-    'cherry','cherry','cherry','cherry','cherry','cherry',
-    'lemon','lemon','lemon','lemon','lemon',
-    'orange','orange','orange','orange',
-    'grapes','grapes','grapes',
-    'prunes','prunes',
-    'star','star','bell','bell', 
-    'diamond','diamond', 's67', 'wild','wild', 'scatter','scatter' 
-];
-
-// --- GESTION DU SOLDE ---
 function updateBalanceDisplays(amount) {
     currentBalance = amount;
     balanceDisplayLobby.textContent = currentBalance;
@@ -125,59 +77,38 @@ function playSound(type) {
     }
 }
 
-// --- INITIALISATION GRILLE DE VIZ ---
-function initVizGrid() {
-    vizGrid.innerHTML = '';
-    for(let r=0; r<3; r++) {
-        for(let c=0; c<5; c++) {
-            const dot = document.createElement('div');
-            dot.className = 'viz-dot';
-            dot.id = `viz-${c}-${r}`;
-            vizGrid.appendChild(dot);
-        }
-    }
-}
-initVizGrid();
+// --- LES 21 LIGNES (O=0, M=1, B=2) ---
+const PAYLINES = [
+    [1, 1, 1, 1, 1], [0, 0, 0, 0, 0], [2, 2, 2, 2, 2], [0, 1, 2, 1, 0], [2, 1, 0, 1, 2],
+    [0, 0, 1, 0, 0], [2, 2, 1, 2, 2], [1, 0, 0, 0, 1], [1, 2, 2, 2, 1], [1, 0, 1, 0, 1],
+    [1, 2, 1, 2, 1], [0, 1, 0, 1, 0], [2, 1, 2, 1, 2], [1, 1, 0, 1, 1], [1, 1, 2, 1, 1],
+    [0, 2, 2, 2, 0], [2, 0, 0, 0, 2], [0, 1, 2, 2, 2], [2, 1, 0, 0, 0], [0, 2, 1, 2, 0], [2, 0, 1, 0, 2]
+];
 
-// --- LOGIQUE AFFICHAGE ---
-function drawWinningSymbols(symbolCoords, payline) {
-    lineVisualizer.classList.remove('hidden');
-    // On éteint tout d'abord
-    document.querySelectorAll('.viz-dot').forEach(d => d.classList.remove('active'));
-    
-    // On allume le tracé de la ligne complète
-    payline.forEach((row, col) => {
-        document.getElementById(`viz-${col}-${row}`).classList.add('active');
-    });
+const SYM_CONFIG = {
+    cherry:  { file: 'slot_cherry.png',  payout: [0.1, 0.3, 1] },
+    lemon:   { file: 'slot_lemon.png',   payout: [0.1, 0.3, 1] },
+    orange:  { file: 'slot_orange.png',  payout: [0.2, 0.5, 2] },
+    grapes:  { file: 'slot_grapes.png',  payout: [0.2, 0.5, 2] },
+    prunes:  { file: 'slot_prunes.png',  payout: [0.3, 0.8, 4] },
+    star:    { file: 'slot_star.png',    payout: [0.5, 2, 10] },
+    bell:    { file: 'slot_bell.png',    payout: [0.5, 2, 10] },
+    diamond: { file: 'slot_diamond.png', payout: [2, 10, 50] },
+    s67:     { file: 'slot_67.png',      payout: [10, 50, 200] },
+    wild:    { file: 'slot_wild.png',    payout: [0, 0, 0] },
+    scatter: { file: 'slot_chbk.png',    payout: [0, 0, 0] } 
+};
 
-    // On s'occupe des symboles réels sur les rouleaux
-    for(let c=0; c<5; c++) {
-        for(let r=0; r<3; r++) {
-            const el = document.getElementById(`sym-${c}-${r}`);
-            if (el) { el.style.opacity = '0.2'; el.style.filter = 'grayscale(100%)'; el.style.transform = 'scale(1)'; el.style.boxShadow = 'none'; el.style.zIndex = '1'; }
-        }
-    }
-    symbolCoords.forEach(p => {
-        const symEl = document.getElementById(`sym-${p.col}-${p.row}`);
-        if(symEl) {
-            symEl.style.transition = '0.3s ease'; symEl.style.opacity = '1'; symEl.style.filter = 'none'; symEl.style.transform = 'scale(1.15)'; symEl.style.background = 'rgba(46, 204, 113, 0.25)'; symEl.style.boxShadow = '0 0 25px #2ecc71'; symEl.style.borderRadius = '15px'; symEl.style.zIndex = '10';
-        }
-    });
-}
+const reelTape = [
+    'cherry','cherry','cherry','cherry','cherry','cherry',
+    'lemon','lemon','lemon','lemon','lemon',
+    'orange','orange','orange','orange',
+    'grapes','grapes','grapes',
+    'prunes','prunes',
+    'star','star','bell','bell', 
+    'diamond','diamond', 's67', 'wild','wild', 'scatter','scatter' 
+];
 
-function resetSymbolsVisuals() {
-    bigWinOverlay.classList.add('hidden');
-    lineVisualizer.classList.add('hidden');
-    document.querySelectorAll('.viz-dot').forEach(d => d.classList.remove('active'));
-    for(let c=0; c<5; c++) {
-        for(let r=0; r<3; r++) {
-            const el = document.getElementById(`sym-${c}-${r}`);
-            if(el) { el.style.opacity = '1'; el.style.filter = 'none'; el.style.transform = 'scale(1)'; el.style.background = 'transparent'; el.style.boxShadow = 'none'; }
-        }
-    }
-}
-
-// --- LOGIQUE JEU ---
 function updatePaytable() {
     let bet = parseInt(betAmountInput.value);
     if(isNaN(bet) || bet < 1) bet = 1;
@@ -200,6 +131,7 @@ document.querySelectorAll('.btn-bet').forEach(btn => {
         if (bet < 1) bet = 1; betAmountInput.value = bet; updatePaytable();
     });
 });
+betAmountInput.addEventListener('input', updatePaytable);
 
 window.addEventListener('keydown', (e) => {
     if (e.code === 'Space' && !document.getElementById('slot-section').classList.contains('hidden')) {
@@ -218,7 +150,10 @@ function initReels() {
     }
 }
 
-// --- FIREBASE & CONNEXION ---
+// --- FIREBASE ---
+document.getElementById('btn-google-login').addEventListener('click', () => signInWithPopup(auth, provider));
+document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
+
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         document.getElementById('login-section').classList.add('hidden');
@@ -254,35 +189,80 @@ document.getElementById('btn-claim-bonus').addEventListener('click', async () =>
     }
 });
 
-document.getElementById('btn-google-login').addEventListener('click', () => signInWithPopup(auth, provider));
-document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
 document.getElementById('btn-open-slot').addEventListener('click', () => { document.getElementById('casino-section').classList.add('hidden'); document.getElementById('slot-section').classList.remove('hidden'); });
 document.getElementById('btn-back-lobby').addEventListener('click', () => { document.getElementById('slot-section').classList.add('hidden'); document.getElementById('casino-section').classList.remove('hidden'); stopAutoSpin(); });
 
-// --- MOTEUR DE JEU ---
-btnSpin.addEventListener('click', () => { initAudio(); stopAutoSpin(); if (!isSpinning) triggerSpin(); });
-btnAutoSpin.addEventListener('click', () => { initAudio(); autoSpinsRemaining = parseInt(autoSpinCountSelect.value); isAutoSpinning = true; btnAutoSpin.classList.add('hidden'); btnStopAuto.classList.remove('hidden'); if (!isSpinning) triggerSpin(); });
-btnStopAuto.addEventListener('click', stopAutoSpin);
+// --- GESTION VISUELLE ---
+function drawWinningSymbols(symbolCoords) {
+    for(let c=0; c<5; c++) {
+        for(let r=0; r<3; r++) {
+            const el = document.getElementById(`sym-${c}-${r}`);
+            if (el) { el.classList.remove('winning-sym'); el.classList.add('dimmed'); }
+        }
+    }
+    symbolCoords.forEach(p => {
+        const symEl = document.getElementById(`sym-${p.col}-${p.row}`);
+        if(symEl) { symEl.classList.remove('dimmed'); symEl.classList.add('winning-sym'); }
+    });
+}
 
+function resetSymbolsVisuals() {
+    bigWinOverlay.classList.add('hidden');
+    winDisplaySection.classList.add('hidden');
+    winDisplayContent.innerHTML = '';
+    
+    for(let c=0; c<5; c++) {
+        for(let r=0; r<3; r++) {
+            const el = document.getElementById(`sym-${c}-${r}`);
+            if(el) { el.classList.remove('winning-sym'); el.classList.remove('dimmed'); }
+        }
+    }
+}
+
+// --- FONCTIONS AUTOSPIN ---
+btnAutoSpin.addEventListener('click', () => {
+    initAudio(); autoSpinsRemaining = parseInt(autoSpinCountSelect.value);
+    isAutoSpinning = true; btnAutoSpin.classList.add('hidden'); btnStopAuto.classList.remove('hidden');
+    if (!isSpinning) triggerSpin();
+});
+btnStopAuto.addEventListener('click', stopAutoSpin);
 function stopAutoSpin() { isAutoSpinning = false; autoSpinsRemaining = 0; btnAutoSpin.classList.remove('hidden'); btnStopAuto.classList.add('hidden'); }
 
+btnSpin.addEventListener('click', () => { initAudio(); stopAutoSpin(); if (!isSpinning) triggerSpin(); });
+
+// --- MOTEUR DE JEU ---
 async function triggerSpin() {
     if (isSpinning) return;
     const user = auth.currentUser;
     let bet = parseInt(betAmountInput.value);
+
     if (freeSpins === 0 && (isNaN(bet) || bet <= 0 || bet > currentBalance)) {
         slotMessage.textContent = bet > currentBalance ? "Fonds insuffisants !" : "Mise invalide !";
         stopAutoSpin(); return;
     }
+
     isSpinning = true; btnSpin.disabled = true; betAmountInput.disabled = true;
     document.querySelectorAll('.btn-bet').forEach(btn => btn.disabled = true);
+    
     clearTimeout(winLineTimer); resetSymbolsVisuals();
-    if (freeSpins > 0) fsMessage.textContent = `🎰 FREE SPINS : IL T'EN RESTE ${freeSpins} ! (GAINS X2)`;
-    else { updateBalanceDisplays(currentBalance - bet); fsMessage.textContent = ""; }
-    slotMessage.textContent = "Bonne chance...";
+
+    if (freeSpins > 0) {
+        fsMessage.textContent = `🎰 FREE SPINS : IL T'EN RESTE ${freeSpins} ! (GAINS X2)`;
+    } else {
+        updateBalanceDisplays(currentBalance - bet);
+        fsMessage.textContent = "";
+    }
+    
+    slotMessage.textContent = "Ça tourne...";
+    slotMessage.style.color = "white";
+
     const finalGrid = [[], [], [], [], []];
-    for (let col = 0; col < 5; col++) { for (let row = 0; row < 3; row++) { finalGrid[col].push(reelTape[Math.floor(Math.random() * reelTape.length)]); } }
+    for (let col = 0; col < 5; col++) {
+        for (let row = 0; row < 3; row++) finalGrid[col].push(reelTape[Math.floor(Math.random() * reelTape.length)]);
+    }
+
     let spinTickInterval = setInterval(() => playSound('spin'), 120);
+
     for (let col = 0; col < 5; col++) {
         const strip = document.getElementById(`strip-${col}`);
         let oldHTML = strip.innerHTML.replace(/id="sym-\d-\d"/g, '');
@@ -291,18 +271,23 @@ async function triggerSpin() {
         for(let i=0; i<blurCount; i++) blurHTML += `<div class="symbol"><img src="slot_symbols/${SYM_CONFIG[reelTape[Math.floor(Math.random() * reelTape.length)]].file}"></div>`;
         let finalHTML = '';
         for(let row=0; row<3; row++) finalHTML += `<div class="symbol" id="sym-${col}-${row}"><img src="slot_symbols/${SYM_CONFIG[finalGrid[col][row]].file}"></div>`;
+        
         strip.style.transition = 'none'; strip.style.transform = `translateY(0px)`;
-        strip.innerHTML = oldHTML + blurHTML + finalHTML;
-        strip.offsetHeight; 
+        strip.innerHTML = oldHTML + blurHTML + finalHTML; strip.offsetHeight; 
         const stopTime = 1.0 + (col * 0.5); 
         strip.style.transition = `transform ${stopTime}s cubic-bezier(0.1, 0.7, 0.1, 1)`;
         strip.style.transform = `translateY(-${(3 + blurCount) * 80}px)`;
+        
         setTimeout(() => { strip.style.transition = 'none'; strip.style.transform = `translateY(0px)`; strip.innerHTML = finalHTML; playSound('stop'); }, stopTime * 1000);
     }
+
     setTimeout(() => clearInterval(spinTickInterval), 2900);
+
     setTimeout(async () => {
-        let totalWin = 0; let scatterCount = 0; let allWinningPaths = [];
+        let totalWin = 0; let scatterCount = 0; let allWinningPaths = []; let winGridsHTML = '';
+        
         for (let c = 0; c < 5; c++) for (let r = 0; r < 3; r++) if (finalGrid[c][r] === 'scatter') scatterCount++;
+
         PAYLINES.forEach((line, index) => {
             let firstSym = null; let matchCount = 0; let winningSymbolsCoords = [];
             for(let col = 0; col < 5; col++) {
@@ -312,35 +297,70 @@ async function triggerSpin() {
                 else { if (sym === firstSym || sym === 'wild') { matchCount++; winningSymbolsCoords.push({col, row}); } else break; }
             }
             if (firstSym === null && matchCount > 0) firstSym = 's67';
+            
             if (matchCount >= 3 && firstSym) {
                 let realPayout = Math.floor(bet * SYM_CONFIG[firstSym].payout[matchCount - 3]);
-                if (realPayout > 0) { totalWin += realPayout; allWinningPaths.push({coords: winningSymbolsCoords, payline: line}); }
+                if (realPayout > 0) {
+                    totalWin += realPayout;
+                    allWinningPaths.push(winningSymbolsCoords);
+                    
+                    // CREATION DE LA MINI GRILLE POUR CETTE LIGNE
+                    let gridHTML = `<div class="win-line-box"><span>Ligne ${index + 1} : +${realPayout}</span><div class="mini-grid">`;
+                    for(let r=0; r<3; r++) {
+                        for(let c=0; c<5; c++) {
+                            const isActive = winningSymbolsCoords.some(p => p.col === c && p.row === r);
+                            gridHTML += `<div class="mini-dot ${isActive ? 'active' : ''}"></div>`;
+                        }
+                    }
+                    gridHTML += `</div></div>`;
+                    winGridsHTML += gridHTML;
+                }
             }
         });
+
         if (freeSpins > 0) { totalWin *= 2; freeSpins--; }
         if (scatterCount === 3) freeSpins += 10; else if (scatterCount === 4) freeSpins += 20; else if (scatterCount === 5) freeSpins += 30;
-        if (scatterCount >= 3) { playSound('win'); slotMessage.textContent = `BOOM ! ${scatterCount} SCATTERS ! +${scatterCount === 3 ? 10 : (scatterCount === 4 ? 20 : 30)} FREE SPINS !`; }
-        else if (totalWin > 0) {
-            playSound('win'); bigWinAmount.textContent = `+${totalWin}`; bigWinOverlay.classList.remove('hidden');
+
+        // AFFICHAGE DES GAINS
+        if (winGridsHTML !== '') {
+            winDisplayContent.innerHTML = winGridsHTML;
+            winDisplaySection.classList.remove('hidden');
+        }
+
+        if (scatterCount >= 3) {
+            playSound('win'); slotMessage.textContent = `BOOM ! ${scatterCount} SCATTERS ! +${scatterCount === 3 ? 10 : (scatterCount === 4 ? 20 : 30)} FREE SPINS !`;
+            slotMessage.style.color = "#f1c40f";
+        } else if (totalWin > 0) {
+            playSound('win');
+            bigWinAmount.textContent = `+${totalWin}`; bigWinOverlay.classList.remove('hidden');
+            slotMessage.textContent = `SUPER ! Gain : +${totalWin} Brundles !`; slotMessage.style.color = "#2ecc71";
+            
             let pathIndex = 0;
             function showNextWinningSet() {
-                if(!isSpinning && allWinningPaths.length > 0) {
-                    resetSymbolsVisuals(); lineVisualizer.classList.remove('hidden');
-                    drawWinningSymbols(allWinningPaths[pathIndex].coords, allWinningPaths[pathIndex].payline);
+                if(!isSpinning && allWinningPaths.length > 0) { 
+                    drawWinningSymbols(allWinningPaths[pathIndex]); 
                     pathIndex = (pathIndex + 1) % allWinningPaths.length;
-                    winLineTimer = setTimeout(showNextWinningSet, 1200);
+                    winLineTimer = setTimeout(showNextWinningSet, 1200); 
                 }
             }
             showNextWinningSet();
-        } else { slotMessage.textContent = "Retente ta chance !"; }
+        } else {
+            slotMessage.textContent = "Retente ta chance !"; slotMessage.style.color = "#e74c3c";
+        }
+
         updateBalanceDisplays(currentBalance + totalWin);
         await updateDoc(doc(db, "users", user.uid), { balance: currentBalance });
+        
         isSpinning = false; btnSpin.disabled = false; betAmountInput.disabled = false;
         document.querySelectorAll('.btn-bet').forEach(btn => btn.disabled = false);
+        
         if (freeSpins > 0 || isAutoSpinning) {
             if (isAutoSpinning && freeSpins === 0) autoSpinsRemaining--;
             if (isAutoSpinning && autoSpinsRemaining <= 0 && freeSpins === 0) stopAutoSpin();
-            else setTimeout(triggerSpin, totalWin > 0 ? 3000 : 800);
-        } else if (totalWin > 0) { setTimeout(() => { if(!isSpinning) bigWinOverlay.classList.add('hidden'); resetSymbolsVisuals(); }, 3000); }
-    }, 3200);
+            else setTimeout(triggerSpin, totalWin > 0 ? 3000 : 800); 
+        } else if (totalWin > 0) {
+            setTimeout(() => { if(!isSpinning) bigWinOverlay.classList.add('hidden'); }, 3000);
+        }
+
+    }, 3200); 
 }
