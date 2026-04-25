@@ -16,7 +16,6 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
-// Éléments UI
 const balanceDisplay = document.getElementById('brundle-balance');
 const btnSpin = document.getElementById('btn-spin');
 const betAmountInput = document.getElementById('bet-amount');
@@ -37,25 +36,56 @@ let isAutoSpinning = false;
 let autoSpinsRemaining = 0;
 let winLineTimer = null;
 
-// --- CONFIGURATION DE LA MACHINE À SOUS ---
+// --- LES 25 LIGNES DE PAIEMENT (Basées sur ta capture) ---
+// Format : index du tableau = colonne, valeur = ligne (0=haut, 1=milieu, 2=bas)
+const PAYLINES = [
+    [1, 1, 1, 1, 1], // Ligne 1 : Tout au milieu
+    [0, 0, 0, 0, 0], // Ligne 2 : Tout en haut
+    [2, 2, 2, 2, 2], // Ligne 3 : Tout en bas
+    [0, 1, 2, 1, 0], // Ligne 4 : V
+    [2, 1, 0, 1, 2], // Ligne 5 : V inversé
+    [0, 0, 1, 0, 0], // Ligne 6
+    [2, 2, 1, 2, 2], // Ligne 7
+    [1, 0, 0, 0, 1], // Ligne 8
+    [1, 2, 2, 2, 1], // Ligne 9
+    [1, 0, 1, 0, 1], // Ligne 10
+    [1, 2, 1, 2, 1], // Ligne 11
+    [0, 1, 0, 1, 0], // Ligne 12
+    [2, 1, 2, 1, 2], // Ligne 13
+    [1, 1, 0, 1, 1], // Ligne 14
+    [1, 1, 2, 1, 1], // Ligne 15
+    [0, 2, 2, 2, 0], // Ligne 16
+    [2, 0, 0, 0, 2], // Ligne 17
+    [0, 1, 2, 2, 2], // Ligne 18
+    [2, 1, 0, 0, 0], // Ligne 19
+    [0, 2, 0, 2, 0], // Ligne 20
+    [2, 0, 2, 0, 2], // Ligne 21
+    [0, 0, 2, 0, 0], // Ligne 22
+    [2, 2, 0, 2, 2], // Ligne 23
+    [0, 2, 1, 2, 0], // Ligne 24
+    [2, 0, 1, 0, 2]  // Ligne 25
+];
+
+// --- HAUTE VOLATILITÉ : Multiplicateurs de la mise TOTALE ---
 const SYM_CONFIG = {
-    cherry:  { file: 'slot_cherry.png',  payout: [0.5, 1, 2], color: '#e74c3c' },
-    lemon:   { file: 'slot_lemon.png',   payout: [0.5, 1, 2], color: '#f1c40f' },
-    orange:  { file: 'slot_orange.png',  payout: [0.5, 1, 2], color: '#e67e22' },
-    grapes:  { file: 'slot_grapes.png',  payout: [0.5, 1, 2], color: '#9b59b6' },
-    prunes:  { file: 'slot_prunes.png',  payout: [0.5, 1, 2], color: '#8e44ad' },
-    star:    { file: 'slot_star.png',    payout: [1, 2, 5],   color: '#f39c12' },
-    bell:    { file: 'slot_bell.png',    payout: [1, 2, 5],   color: '#f1c40f' },
-    diamond: { file: 'slot_diamond.png', payout: [2, 5, 10],  color: '#3498db' },
-    s67:     { file: 'slot_67.png',      payout: [5, 10, 25], color: '#2ecc71' },
-    wild:    { file: 'slot_wild.png',    payout: [0, 0, 0],   color: '#ffffff' },
-    scatter: { file: 'slot_chbk.png',    payout: [0, 0, 0],   color: '#e74c3c' } 
+    cherry:  { file: 'slot_cherry.png',  payout: [0.1, 0.5, 2],  color: '#e74c3c' },
+    lemon:   { file: 'slot_lemon.png',   payout: [0.1, 0.5, 2],  color: '#f1c40f' },
+    orange:  { file: 'slot_orange.png',  payout: [0.2, 0.8, 3],  color: '#e67e22' },
+    grapes:  { file: 'slot_grapes.png',  payout: [0.2, 0.8, 3],  color: '#9b59b6' },
+    prunes:  { file: 'slot_prunes.png',  payout: [0.3, 1, 4],    color: '#8e44ad' },
+    star:    { file: 'slot_star.png',    payout: [0.5, 2, 10],   color: '#f39c12' },
+    bell:    { file: 'slot_bell.png',    payout: [0.5, 2, 10],   color: '#f1c40f' },
+    diamond: { file: 'slot_diamond.png', payout: [2, 10, 50],    color: '#3498db' },
+    s67:     { file: 'slot_67.png',      payout: [10, 50, 200],  color: '#2ecc71' },
+    wild:    { file: 'slot_wild.png',    payout: [0, 0, 0],      color: '#ffffff' },
+    scatter: { file: 'slot_chbk.png',    payout: [0, 0, 0],      color: '#e74c3c' } 
 };
 
+// Bande RTP
 const reelTape = [
-    'cherry','cherry','cherry', 'lemon','lemon','lemon', 'orange','orange','orange',
+    'cherry','cherry','cherry','lemon','lemon','lemon', 'orange','orange','orange',
     'grapes','grapes', 'prunes','prunes', 'star','star', 'bell','bell', 
-    'diamond', 's67', 'wild','wild','wild', 'scatter','scatter'
+    'diamond', 's67', 'wild','wild', 'scatter','scatter'
 ];
 
 function updatePaytable() {
@@ -68,7 +98,7 @@ function updatePaytable() {
         const p = SYM_CONFIG[sym].payout;
         html += `<div class="paytable-row">
                     <img src="slot_symbols/${SYM_CONFIG[sym].file}" class="paytable-sym">
-                    <span class="paytable-vals">5x: <b>${p[2]*bet}</b> | 4x: <b>${p[1]*bet}</b> | 3x: <b>${p[0]*bet}</b></span>
+                    <span class="paytable-vals">5x: <b>${Math.round(p[2]*bet)}</b> | 4x: <b>${Math.round(p[1]*bet)}</b> | 3x: <b>${Math.round(p[0]*bet)}</b></span>
                  </div>`;
     });
     paytableContent.innerHTML = html;
@@ -121,18 +151,16 @@ document.getElementById('btn-claim-bonus').addEventListener('click', async () =>
 document.getElementById('btn-open-slot').addEventListener('click', () => { document.getElementById('casino-section').classList.add('hidden'); document.getElementById('slot-section').classList.remove('hidden'); });
 document.getElementById('btn-back-lobby').addEventListener('click', () => { document.getElementById('slot-section').classList.add('hidden'); document.getElementById('casino-section').classList.remove('hidden'); balanceDisplay.textContent = currentBalance; stopAutoSpin(); });
 
-// --- GESTION DES LIGNES GAGNANTES (SVG) ---
+// --- SVG GESTION LIGNES ---
 function getSymbolCenter(col, row) {
     const x = 10 + (col * 80) + (col * 10) + 40; 
     const y = 10 + (row * 80) + 40; 
     return { x, y };
 }
 
-function drawWinningPaths(paths, color) {
-    // 1. Nettoyage total et correct de l'SVG
+function drawWinningPaths(lineData) {
     while (winLinesSvg.firstChild) { winLinesSvg.removeChild(winLinesSvg.firstChild); }
     
-    // 2. Assombrir tous les symboles avant d'illuminer la nouvelle ligne
     for(let c=0; c<5; c++) {
         for(let r=0; r<3; r++) {
             const el = document.getElementById(`sym-${c}-${r}`);
@@ -140,29 +168,26 @@ function drawWinningPaths(paths, color) {
         }
     }
 
-    // 3. Dessiner les lignes et illuminer les gagnants
-    paths.forEach(path => {
-        let points = path.map(p => `${getSymbolCenter(p.col, p.row).x},${getSymbolCenter(p.col, p.row).y}`).join(' ');
-        
-        // Création d'une balise polyline reconnue comme du vrai SVG
-        let polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
-        polyline.setAttribute('class', 'win-line');
-        polyline.setAttribute('points', points);
-        polyline.setAttribute('stroke', color);
-        polyline.setAttribute('stroke-width', '6');
-        winLinesSvg.appendChild(polyline);
+    // Trace la ligne continue sur les 5 rouleaux
+    let points = lineData.fullLine.map(p => `${getSymbolCenter(p.col, p.row).x},${getSymbolCenter(p.col, p.row).y}`).join(' ');
+    let polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+    polyline.setAttribute('class', 'win-line');
+    polyline.setAttribute('points', points);
+    polyline.setAttribute('stroke', lineData.color);
+    polyline.setAttribute('stroke-width', '6');
+    winLinesSvg.appendChild(polyline);
 
-        path.forEach(p => {
-            const symEl = document.getElementById(`sym-${p.col}-${p.row}`);
-            if(symEl) {
-                symEl.classList.remove('dimmed'); // On enlève le voile sombre
-                symEl.classList.add('winning-sym'); // On agrandit et on illumine
-            }
-        });
+    // Illumine uniquement les symboles qui ont gagné
+    lineData.winningSymbols.forEach(p => {
+        const symEl = document.getElementById(`sym-${p.col}-${p.row}`);
+        if(symEl) {
+            symEl.classList.remove('dimmed');
+            symEl.classList.add('winning-sym');
+        }
     });
 }
 
-// --- FONCTIONS AUTOSPIN ---
+// --- AUTOSPIN ---
 btnAutoSpin.addEventListener('click', () => {
     autoSpinsRemaining = parseInt(autoSpinCountSelect.value);
     isAutoSpinning = true;
@@ -180,7 +205,7 @@ function stopAutoSpin() {
     btnStopAuto.classList.add('hidden');
 }
 
-// --- LE MOTEUR DU JEU ---
+// --- MOTEUR DE JEU ---
 btnSpin.addEventListener('click', () => {
     stopAutoSpin(); 
     if (!isSpinning) triggerSpin();
@@ -200,7 +225,6 @@ async function triggerSpin() {
     btnSpin.disabled = true;
     betAmountInput.disabled = true;
     
-    // Nettoyage de l'écran précédent
     clearTimeout(winLineTimer);
     while (winLinesSvg.firstChild) { winLinesSvg.removeChild(winLinesSvg.firstChild); }
     
@@ -258,47 +282,57 @@ async function triggerSpin() {
     setTimeout(async () => {
         let totalWin = 0;
         let scatterCount = 0;
-        const baseSymbols = ['cherry','lemon','orange','grapes','prunes','star','bell','diamond','s67'];
+        let allWinningPaths = [];
         
+        // 1. Comptage des Scatters
         for (let c = 0; c < 5; c++) {
             for (let r = 0; r < 3; r++) {
                 if (finalGrid[c][r] === 'scatter') scatterCount++;
             }
         }
 
-        let allWinningPaths = [];
+        // 2. Vérification des 25 Lignes
+        PAYLINES.forEach(line => {
+            let firstSym = null;
+            let matchCount = 0;
+            let winningSymbolsCoords = [];
+            let fullLineCoords = [];
 
-        baseSymbols.forEach(symType => {
-            let activeNodes = [[], [], [], [], []];
-            let length = 0;
-            
-            for (let c = 0; c < 5; c++) {
-                let foundInCol = false;
-                for (let r = 0; r < 3; r++) {
-                    if (finalGrid[c][r] === symType || finalGrid[c][r] === 'wild') {
-                        activeNodes[c].push(r);
-                        foundInCol = true;
+            for(let col = 0; col < 5; col++) {
+                let row = line[col];
+                let sym = finalGrid[col][row];
+                fullLineCoords.push({col, row});
+
+                if (sym === 'scatter') break; // Le scatter ne paie pas sur les lignes
+
+                if (firstSym === null) {
+                    if (sym !== 'wild') firstSym = sym;
+                    matchCount++;
+                    winningSymbolsCoords.push({col, row});
+                } else {
+                    if (sym === firstSym || sym === 'wild') {
+                        matchCount++;
+                        winningSymbolsCoords.push({col, row});
+                    } else {
+                        break;
                     }
                 }
-                if (foundInCol) length++;
-                else break; 
             }
-            
-            if (length >= 3) {
-                let multiplier = SYM_CONFIG[symType].payout[length - 3];
-                let pathsForSym = [];
-                function buildPath(col, currentPath) {
-                    if(col === length) { pathsForSym.push([...currentPath]); return; }
-                    activeNodes[col].forEach(row => {
-                        currentPath.push({col, row});
-                        buildPath(col + 1, currentPath);
-                        currentPath.pop();
+
+            if (firstSym === null && matchCount > 0) firstSym = 's67'; // Cas full wilds
+
+            if (matchCount >= 3 && firstSym) {
+                let multiplier = SYM_CONFIG[firstSym].payout[matchCount - 3];
+                let realPayout = Math.round(bet * multiplier);
+                
+                if (realPayout > 0) {
+                    totalWin += realPayout;
+                    allWinningPaths.push({
+                        fullLine: fullLineCoords,
+                        winningSymbols: winningSymbolsCoords,
+                        color: SYM_CONFIG[firstSym].color
                     });
                 }
-                buildPath(0, []);
-                
-                totalWin += (bet * multiplier * pathsForSym.length);
-                allWinningPaths.push({ paths: pathsForSym, color: SYM_CONFIG[symType].color });
             }
         });
 
@@ -315,13 +349,13 @@ async function triggerSpin() {
             slotMessage.textContent = `SUPER ! Gain : +${totalWin} Brundles !`;
             slotMessage.style.color = "#2ecc71";
             
-            // Lancer le dessin des lignes (boucle)
+            // Animation des lignes
             let pathIndex = 0;
             function showNextLine() {
                 if(!isSpinning && allWinningPaths.length > 0) { 
-                    drawWinningPaths(allWinningPaths[pathIndex].paths, allWinningPaths[pathIndex].color);
+                    drawWinningPaths(allWinningPaths[pathIndex]);
                     pathIndex = (pathIndex + 1) % allWinningPaths.length;
-                    winLineTimer = setTimeout(showNextLine, 1500); 
+                    winLineTimer = setTimeout(showNextLine, 1200); 
                 }
             }
             showNextLine();
