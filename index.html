@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHBK Casino</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>CHBK Casino</h1>
+
+    <div id="login-section">
+        <p>Connecte-toi pour récupérer tes Brundles !</p>
+        <div class="buttons">
+            <button id="btn-google-login" class="btn btn-secondary">🌐 Se connecter avec Google</button>
+        </div>
+        <p id="auth-message" class="error-msg"></p>
+    </div>
+
+    <div id="casino-section" class="hidden">
+        <p>Bienvenue dans le temple, <span id="player-name" style="color: #f1c40f; font-weight: bold;">Joueur</span> ! 
+           <button id="btn-logout" class="btn-small">Déconnexion</button>
+        </p>
+        
+        <div class="balance-board">
+            <h2>Solde : <span id="brundle-balance">...</span> Brundles</h2>
+        </div>
+
+        <h3>Jeux disponibles (Bientôt)</h3>
+        <div class="games-menu">
+            <button class="btn btn-game" disabled>🎰 Machine à sous</button>
+            <button class="btn btn-game" disabled>🎡 Roulette</button>
+            <button class="btn btn-game" disabled>🃏 Blackjack</button>
+        </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
