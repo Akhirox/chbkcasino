@@ -799,7 +799,7 @@ async function triggerSpinSlot() {
             else setTimeout(triggerSpinSlot, totalWin > 0 ? 2000 : 400); 
         } else if (totalWin > 0) {
             // L'écran Jackpot
-            setTimeout(() => { if(!isSpinningSlot) bigWinOverlay.classList.add('hidden'); }, 1500);
+            setTimeout(() => { if(!isSpinningSlot) bigWinOverlay.classList.add('hidden'); }, 900);
         }
 
     }, 1600); 
