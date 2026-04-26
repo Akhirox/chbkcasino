@@ -49,11 +49,16 @@ const wheelEl = document.getElementById('roulette-wheel');
 const winnerTextEl = document.getElementById('roulette-winner-text');
 const historyEl = document.getElementById('roulette-history');
 
-// VARIABLES BLACKJACK
+let freeSpins = 0;
+let isSpinningSlot = false;
+let isAutoSpinning = false;
+let autoSpinsRemaining = 0;
+let winLineTimer = null;
+
+// --- VARIABLES BLACKJACK ---
 const bjSection = document.getElementById('blackjack-section');
 const balanceDisplayBJ = document.getElementById('bj-brundle-balance');
-const btnOpenBJ = document.getElementById('btn-open-blackjack');
-
+const bjBetAmountInput = document.getElementById('bj-bet-amount');
 const bjMessage = document.getElementById('bj-message');
 const bjDealerCards = document.getElementById('bj-dealer-cards');
 const bjPlayerCards = document.getElementById('bj-player-cards');
@@ -66,18 +71,11 @@ const btnBjDeal = document.getElementById('btn-bj-deal');
 const btnBjHit = document.getElementById('btn-bj-hit');
 const btnBjStand = document.getElementById('btn-bj-stand');
 const btnBjDouble = document.getElementById('btn-bj-double');
+const btnBjRepeat = document.getElementById('btn-bj-repeat');
 
-let bjDeck = [];
-let bjPlayerHand = [];
-let bjDealerHand = [];
-let bjCurrentBet = 10;
-let bjIsGameActive = false;
+let bjDeck = []; let bjPlayerHand = []; let bjDealerHand = []; let bjIsGameActive = false; let lastBjBet = 0;
 
-let freeSpins = 0;
-let isSpinningSlot = false;
-let isAutoSpinning = false;
-let autoSpinsRemaining = 0;
-let winLineTimer = null;
+
 
 // Variables Roulette
 let selectedChipValue = 10;
@@ -494,6 +492,7 @@ onAuthStateChanged(auth, async (user) => {
         document.getElementById('casino-section').classList.add('hidden');
         slotSection.classList.add('hidden');
         rouletteSection.classList.add('hidden');
+        bjSection.classList.add('hidden');
     }
 });
 
@@ -556,16 +555,24 @@ document.getElementById('btn-claim-bonus').addEventListener('click', async () =>
 // NAVIGATION
 document.getElementById('btn-open-slot').addEventListener('click', () => { document.getElementById('casino-section').classList.add('hidden'); slotSection.classList.remove('hidden'); });
 document.getElementById('btn-open-roulette').addEventListener('click', () => { document.getElementById('casino-section').classList.add('hidden'); rouletteSection.classList.remove('hidden'); });
-document.getElementById('btn-open-blackjack').addEventListener('click', () => { document.getElementById('casino-section').classList.add('hidden'); bjSection.classList.remove('hidden'); });
+document.getElementById('btn-open-blackjack').addEventListener('click', () => { document.getElementById('casino-section').classList.add('hidden'); bjSection.classList.remove('hidden'); }); // <-- AJOUT
 
 document.querySelectorAll('.btn-back-lobby').forEach(btn => {
     btn.addEventListener('click', () => {
         slotSection.classList.add('hidden'); 
-        rouletteSection.classList.add('hidden');
-        bjSection.classList.add('hidden'); // <-- Coche le Blackjack en rentrant au lobby
+        rouletteSection.classList.add('hidden'); 
+        bjSection.classList.add('hidden'); // <-- AJOUT
         document.getElementById('casino-section').classList.remove('hidden'); 
         stopAutoSpin();
     });
+});
+
+window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+        if(!slotSection.classList.contains('hidden') && !btnSpinSlot.disabled && !isSpinningSlot) { e.preventDefault(); btnSpinSlot.click(); } 
+        else if (!rouletteSection.classList.contains('hidden') && !btnSpinRoulette.disabled && !isRouletteSpinning) { e.preventDefault(); btnSpinRoulette.click(); }
+        else if (!bjSection.classList.contains('hidden') && !btnBjDeal.disabled && !bjIsGameActive) { e.preventDefault(); btnBjDeal.click(); } // <-- AJOUT
+    }
 });
 
 // --- SLOT LOGIC VISUALS ---
@@ -736,17 +743,9 @@ async function triggerSpinSlot() {
 // ==========================================
 // MOTEUR DU BLACKJACK
 // ==========================================
-
 function buildDeck() {
-    const suits = ['♠', '♥', '♦', '♣'];
-    const values = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
-    let deck = [];
-    for(let suit of suits) {
-        for(let value of values) {
-            deck.push({ suit, value, isRed: (suit==='♥'||suit==='♦') });
-        }
-    }
-    // Shuffle x3
+    const suits = ['♠', '♥', '♦', '♣']; const values = ['2','3','4','5','6','7','8','9','10','J','Q','K','A']; let deck = [];
+    for(let suit of suits) for(let value of values) deck.push({ suit, value, isRed: (suit==='♥'||suit==='♦') });
     for(let i=0; i<3; i++) deck.sort(() => Math.random() - 0.5);
     return deck;
 }
@@ -762,11 +761,12 @@ function getHandScore(hand) {
     return score;
 }
 
-function renderCard(card, isHidden = false) {
-    if(isHidden) return `<div class="bj-card hidden-card"></div>`;
+function renderCard(card, isHidden = false, delayIndex = 0) {
+    const animStyle = `animation-delay: ${delayIndex * 0.2}s;`;
+    if(isHidden) return `<div class="bj-card hidden-card" style="${animStyle}"></div>`;
     const colorClass = card.isRed ? 'red' : 'black';
     return `
-        <div class="bj-card ${colorClass}">
+        <div class="bj-card ${colorClass}" style="${animStyle}">
             <div class="suit-top">${card.value}${card.suit}</div>
             <div class="val-center">${card.suit}</div>
             <div class="suit-bottom">${card.value}${card.suit}</div>
@@ -774,121 +774,120 @@ function renderCard(card, isHidden = false) {
     `;
 }
 
-function updateBJDisplay(hideDealerSecondCard = false) {
-    bjPlayerCards.innerHTML = bjPlayerHand.map(c => renderCard(c)).join('');
+function updateBJDisplay(hideDealerSecondCard = false, isInitialDeal = false) {
+    let pCardsHTML = ''; let dCardsHTML = '';
+    bjPlayerHand.forEach((c, i) => {
+        pCardsHTML += renderCard(c, false, isInitialDeal ? i : 0);
+        if(isInitialDeal) setTimeout(() => playSound('card'), i * 200);
+    });
+    bjPlayerCards.innerHTML = pCardsHTML;
     bjPlayerScore.textContent = getHandScore(bjPlayerHand);
 
     if(hideDealerSecondCard && bjDealerHand.length > 1) {
-        bjDealerCards.innerHTML = renderCard(bjDealerHand[0]) + renderCard(bjDealerHand[1], true);
-        bjDealerScore.textContent = "?"; // On cache le score réel
+        dCardsHTML += renderCard(bjDealerHand[0], false, isInitialDeal ? 0.5 : 0);
+        dCardsHTML += renderCard(bjDealerHand[1], true, isInitialDeal ? 1.5 : 0);
+        if(isInitialDeal) { setTimeout(() => playSound('card'), 500); setTimeout(() => playSound('card'), 1500); }
+        bjDealerScore.textContent = "?"; 
     } else {
-        bjDealerCards.innerHTML = bjDealerHand.map(c => renderCard(c)).join('');
+        bjDealerHand.forEach((c, i) => {
+            dCardsHTML += renderCard(c, false, isInitialDeal ? i : (i === bjDealerHand.length - 1 ? 0 : 0));
+            if(!isInitialDeal && i === bjDealerHand.length - 1) setTimeout(() => playSound('card'), 100);
+        });
         bjDealerScore.textContent = getHandScore(bjDealerHand);
     }
+    bjDealerCards.innerHTML = dCardsHTML;
 }
 
-// Sélection jetons
-document.querySelectorAll('.bj-chip').forEach(chip => {
-    chip.addEventListener('click', (e) => {
-        if(bjIsGameActive) return;
-        initAudio();
-        document.querySelectorAll('.bj-chip').forEach(c => c.classList.remove('active'));
-        e.target.classList.add('active');
-        bjCurrentBet = parseInt(e.target.dataset.val);
-        btnBjDeal.innerHTML = `DISTRIBUER (${bjCurrentBet})`;
+// Contrôles de mise BJ (identique à la slot)
+document.querySelectorAll('.btn-bj-bet').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        if (bjIsGameActive) return;
+        let bet = parseInt(bjBetAmountInput.value) || 0; const val = e.target.dataset.val;
+        if (val === '/2') bet = Math.floor(bet / 2); else if (val === 'x2') bet *= 2; else bet += parseInt(val);
+        if (bet < 1) bet = 1; bjBetAmountInput.value = bet;
     });
 });
 
-// DISTRIBUER
+btnBjRepeat.addEventListener('click', () => {
+    if(bjIsGameActive || lastBjBet === 0) return;
+    bjBetAmountInput.value = lastBjBet;
+    btnBjDeal.click();
+});
+
 btnBjDeal.addEventListener('click', async () => {
     initAudio();
-    if(currentBalance < bjCurrentBet) {
-        bjMessage.textContent = "Fonds insuffisants !";
-        bjMessage.style.color = "#e74c3c";
-        return;
+    let bet = parseInt(bjBetAmountInput.value);
+    if(isNaN(bet) || bet <= 0 || currentBalance < bet) {
+        bjMessage.textContent = "Fonds insuffisants ou mise invalide !"; bjMessage.style.color = "#e74c3c"; return;
     }
 
     bjIsGameActive = true;
-    updateBalanceDisplays(currentBalance - bjCurrentBet);
+    lastBjBet = bet;
+    updateBalanceDisplays(currentBalance - bet);
     
-    bjBetControls.classList.add('hidden');
-    bjActionControls.classList.remove('hidden');
-    btnBjDouble.disabled = currentBalance < bjCurrentBet; // Ne peut doubler que si on a les fonds
+    bjBetControls.classList.add('hidden'); bjActionControls.classList.remove('hidden');
+    btnBjDouble.disabled = currentBalance < bet; 
 
     bjDeck = buildDeck();
     bjPlayerHand = [bjDeck.pop(), bjDeck.pop()];
     bjDealerHand = [bjDeck.pop(), bjDeck.pop()];
 
-    bjMessage.textContent = "À vous de jouer !";
-    bjMessage.style.color = "white";
-    playSound('spin');
+    bjMessage.textContent = "Distribution..."; bjMessage.style.color = "white";
 
-    updateBJDisplay(true);
+    updateBJDisplay(true, true);
+    btnBjHit.disabled = true; btnBjStand.disabled = true; btnBjDouble.disabled = true;
 
-    // Vérification Blackjack naturel
-    if(getHandScore(bjPlayerHand) === 21) {
-        await endGameBJ("BLACKJACK !");
-    }
+    setTimeout(async () => {
+        if(getHandScore(bjPlayerHand) === 21) {
+            await endGameBJ("BLACKJACK !");
+        } else {
+            bjMessage.textContent = "À vous de jouer !";
+            btnBjHit.disabled = false; btnBjStand.disabled = false;
+            btnBjDouble.disabled = currentBalance < bet;
+        }
+    }, 1800);
 });
 
-// TIRER (Hit)
 btnBjHit.addEventListener('click', async () => {
-    initAudio();
-    btnBjDouble.disabled = true; // On ne peut plus doubler après avoir tiré
+    initAudio(); btnBjDouble.disabled = true; 
     bjPlayerHand.push(bjDeck.pop());
-    playSound('spin');
-    updateBJDisplay(true);
+    updateBJDisplay(true, false);
 
-    if(getHandScore(bjPlayerHand) > 21) {
-        await endGameBJ("Vous avez sauté ! (Bust)");
-    }
+    if(getHandScore(bjPlayerHand) > 21) setTimeout(() => endGameBJ("Vous avez sauté ! (Bust)"), 500);
 });
 
-// DOUBLER (Double Down)
 btnBjDouble.addEventListener('click', async () => {
     initAudio();
-    updateBalanceDisplays(currentBalance - bjCurrentBet); // Débite la mise une 2ème fois
-    bjCurrentBet *= 2; 
+    let bet = parseInt(bjBetAmountInput.value);
+    updateBalanceDisplays(currentBalance - bet); 
+    bjBetAmountInput.value = bet * 2; 
     
     bjPlayerHand.push(bjDeck.pop());
-    playSound('spin');
-    updateBJDisplay(true);
+    updateBJDisplay(true, false);
 
-    if(getHandScore(bjPlayerHand) > 21) {
-        await endGameBJ("Vous avez sauté ! (Bust)");
-    } else {
-        dealerPlay(); // Le croupier joue automatiquement après un Double
-    }
+    if(getHandScore(bjPlayerHand) > 21) setTimeout(() => endGameBJ("Vous avez sauté ! (Bust)"), 500);
+    else setTimeout(dealerPlay, 800);
 });
 
-// RESTER (Stand) -> Tour du croupier
-btnBjStand.addEventListener('click', () => {
-    initAudio();
-    dealerPlay();
-});
+btnBjStand.addEventListener('click', () => { initAudio(); dealerPlay(); });
 
 async function dealerPlay() {
     bjActionControls.classList.add('hidden');
-    updateBJDisplay(false); // Révèle la carte du croupier
-    playSound('spin');
+    updateBJDisplay(false, false); 
 
-    // Le croupier tire jusqu'à 17
     const dealerDraw = setInterval(() => {
         if(getHandScore(bjDealerHand) < 17) {
             bjDealerHand.push(bjDeck.pop());
-            playSound('spin');
-            updateBJDisplay(false);
+            updateBJDisplay(false, false);
         } else {
             clearInterval(dealerDraw);
-            checkWinnerBJ();
+            setTimeout(checkWinnerBJ, 500);
         }
     }, 1000);
 }
 
 async function checkWinnerBJ() {
-    const pScore = getHandScore(bjPlayerHand);
-    const dScore = getHandScore(bjDealerHand);
-    
+    const pScore = getHandScore(bjPlayerHand); const dScore = getHandScore(bjDealerHand);
     if(dScore > 21) await endGameBJ("Le Croupier saute ! Vous gagnez !");
     else if(pScore > dScore) await endGameBJ("Vous gagnez !");
     else if(pScore < dScore) await endGameBJ("Le Croupier gagne.");
@@ -897,44 +896,29 @@ async function checkWinnerBJ() {
 
 async function endGameBJ(reason) {
     const user = auth.currentUser;
-    bjActionControls.classList.add('hidden');
-    bjBetControls.classList.remove('hidden');
+    bjActionControls.classList.add('hidden'); bjBetControls.classList.remove('hidden');
     
-    const pScore = getHandScore(bjPlayerHand);
-    const dScore = getHandScore(bjDealerHand);
+    let bet = parseInt(bjBetAmountInput.value);
+    const pScore = getHandScore(bjPlayerHand); const dScore = getHandScore(bjDealerHand);
     let winAmount = 0;
 
     if (pScore <= 21) {
         if(pScore === 21 && bjPlayerHand.length === 2 && dScore !== 21) {
-            // Blackjack Naturel paie 3:2 (donc la mise d'origine + 1.5x)
-            winAmount = bjCurrentBet + (bjCurrentBet * 1.5);
-            bjMessage.style.color = "#f1c40f";
+            winAmount = bet + (bet * 1.5); bjMessage.style.color = "#f1c40f";
         } 
         else if (dScore > 21 || pScore > dScore) {
-            winAmount = bjCurrentBet * 2;
-            bjMessage.style.color = "#2ecc71";
-            playSound('win');
+            winAmount = bet * 2; bjMessage.style.color = "#2ecc71"; playSound('win');
         } 
         else if (pScore === dScore) {
-            winAmount = bjCurrentBet; // Remboursement
-            bjMessage.style.color = "white";
-        } else {
-            bjMessage.style.color = "#e74c3c";
-        }
-    } else {
-        bjMessage.style.color = "#e74c3c";
-    }
+            winAmount = bet; bjMessage.style.color = "white";
+        } else { bjMessage.style.color = "#e74c3c"; }
+    } else { bjMessage.style.color = "#e74c3c"; }
 
     bjMessage.textContent = reason + (winAmount > 0 ? ` (+${winAmount})` : "");
     
-    if(winAmount > 0) {
-        updateBalanceDisplays(currentBalance + winAmount);
-    }
-    
+    if(winAmount > 0) updateBalanceDisplays(currentBalance + winAmount);
     await updateDoc(doc(db, "users", user.uid), { balance: currentBalance });
     
-    // Restaure la mise d'origine si elle a été doublée
-    if(bjCurrentBet > 1000) bjCurrentBet /= 2; 
-    btnBjDeal.innerHTML = `DISTRIBUER (${bjCurrentBet})`;
+    if(bet > lastBjBet) bjBetAmountInput.value = lastBjBet; 
     bjIsGameActive = false;
 }
