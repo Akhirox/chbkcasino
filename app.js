@@ -416,11 +416,12 @@ const PAYLINES = [
 ];
 
 const SYM_CONFIG = {
-    cherry:  { file: 'slot_cherry.png',  payout: [0.1, 0.3, 1] },
-    lemon:   { file: 'slot_lemon.png',   payout: [0.1, 0.3, 1] },
-    orange:  { file: 'slot_orange.png',  payout: [0.2, 0.5, 2] },
-    grapes:  { file: 'slot_grapes.png',  payout: [0.2, 0.5, 2] },
-    prunes:  { file: 'slot_prunes.png',  payout: [0.3, 0.8, 4] },
+    // x1.5 sur les fruits de base
+    cherry:  { file: 'slot_cherry.png',  payout: [0.15, 0.45, 1.5] },
+    lemon:   { file: 'slot_lemon.png',   payout: [0.15, 0.45, 1.5] },
+    orange:  { file: 'slot_orange.png',  payout: [0.3, 0.75, 3] },
+    grapes:  { file: 'slot_grapes.png',  payout: [0.3, 0.75, 3] },
+    prunes:  { file: 'slot_prunes.png',  payout: [0.45, 1.2, 6] },
     star:    { file: 'slot_star.png',    payout: [0.5, 2, 10] },
     bell:    { file: 'slot_bell.png',    payout: [0.5, 2, 10] },
     diamond: { file: 'slot_diamond.png', payout: [2, 10, 50] },
@@ -430,10 +431,17 @@ const SYM_CONFIG = {
 };
 
 const reelTape = [
-    ...Array(20).fill('cherry'), ...Array(18).fill('lemon'), ...Array(15).fill('orange'), 
-    ...Array(12).fill('grapes'), ...Array(9).fill('prunes'), ...Array(6).fill('star'),     
-    ...Array(6).fill('bell'), ...Array(5).fill('diamond'), ...Array(5).fill('wild'),     
-    ...Array(2).fill('s67'), ...Array(2).fill('scatter')
+    ...Array(20).fill('cherry'), 
+    ...Array(17).fill('lemon'),    // 17 au lieu de 18
+    ...Array(15).fill('orange'), 
+    ...Array(12).fill('grapes'), 
+    ...Array(9).fill('prunes'), 
+    ...Array(6).fill('star'),     
+    ...Array(6).fill('bell'), 
+    ...Array(5).fill('diamond'), 
+    ...Array(6).fill('wild'),      // 6 au lieu de 5 (+1%)
+    ...Array(2).fill('s67'), 
+    ...Array(2).fill('scatter')
 ];
 
 function updatePaytable() {
