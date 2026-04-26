@@ -24,22 +24,42 @@ input, select { padding: 8px; border-radius: 5px; border: none; background-color
 .game-tile-wrapper:hover .game-tile { transform: translateY(-15px) scale(1.05) rotateX(10deg); border-color: #e67e22; box-shadow: 0 20px 40px rgba(230, 126, 34, 0.6);}
 .game-tile-wrapper:hover .tile-title { color: #f1c40f; text-shadow: 0 0 15px #e67e22;}
 
-/* --- SLOT LAYOUT --- */
+/* ==========================================
+   --- SLOT LAYOUT (CORRIGÉ ET ALIGNÉ) ---
+   ========================================== */
 .slot-layout { 
     display: flex; 
     justify-content: center; 
     align-items: flex-start; 
     gap: 20px; 
-    flex-wrap: nowrap; /* Force l'alignement sur une seule ligne */
+    flex-wrap: nowrap; /* Empêche de passer à la ligne */
     margin-top: 20px; 
     width: 100%;
+    max-width: 1100px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
-/* Ajustement des largeurs pour que tout rentre */
-.left-column, .right-column { width: 250px; flex-shrink: 0; }
-.slot-machine-wrapper { flex-grow: 0; flex-shrink: 0; width: 500px; }
-.left-column { display: flex; flex-direction: column; width: 280px; }
-.right-column { display: flex; flex-direction: column; width: 280px; }
+/* Colonnes gauche (Paytable) et droite (Gains) */
+.left-column, .right-column { 
+    display: flex; 
+    flex-direction: column; 
+    width: 250px; 
+    flex-shrink: 0; /* Empêche l'écrasement */
+}
+
+/* Centre (La machine) */
+.slot-machine-wrapper { 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    width: 500px; 
+    flex-shrink: 0; 
+}
+
+.slot-header { display: flex; justify-content: flex-end; align-items: center; width: 100%; padding: 0 10px; margin-bottom: 10px; box-sizing: border-box; }
+.live-balance { background: #2ecc71; color: #121212; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 1.1em; box-shadow: 0 0 10px rgba(46, 204, 113, 0.5); }
+
 .paytable-section { background-color: #1a1a1a; padding: 15px; border-radius: 10px; border: 2px solid #555; width: 100%; box-sizing: border-box; text-align: left; }
 .paytable-section h3 { margin-top: 0; color: #f1c40f; text-align: center; border-bottom: 1px solid #333; padding-bottom: 10px;}
 .paytable-grid { display: flex; flex-direction: column; gap: 8px; }
@@ -60,9 +80,6 @@ input, select { padding: 8px; border-radius: 5px; border: none; background-color
 .mini-dot.active { background: #f1c40f; box-shadow: 0 0 5px #f1c40f; }
 .empty-win-msg { color: #555; font-style: italic; text-align: center; margin-top: 20px; }
 
-.slot-machine-wrapper { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 500px; }
-.slot-header { display: flex; justify-content: flex-end; align-items: center; width: 100%; padding: 0 10px; margin-bottom: 10px; box-sizing: border-box; }
-.live-balance { background: #2ecc71; color: #121212; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 1.1em; box-shadow: 0 0 10px rgba(46, 204, 113, 0.5); }
 .slot-machine.dark-theme { background-color: #0a0a0a; padding: 20px; border-radius: 15px; border: 3px solid #f1c40f; box-shadow: 0 0 30px rgba(241, 196, 15, 0.2); width: 100%; box-sizing: border-box;}
 
 .slot-window { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; background-color: #000; padding: 10px; border-radius: 10px; border-top: 4px solid #222; border-bottom: 4px solid #444; height: 260px; overflow: hidden; position: relative; width: 100%; box-sizing: border-box; }
@@ -98,7 +115,9 @@ input, select { padding: 8px; border-radius: 5px; border: none; background-color
 .fs-msg { color: #9b59b6; font-weight: bold; font-size: 1.2em; text-transform: uppercase; animation: fsPulse 1s infinite alternate;}
 @keyframes fsPulse { 0% { transform: scale(1); } 100% { transform: scale(1.05); } }
 
-/* ROULETTE */
+/* ==========================================
+   --- ROULETTE ---
+   ========================================== */
 .roulette-game-area { background-color: #0a0a0a; padding: 25px; border-radius: 15px; border: 3px solid #27ae60; box-shadow: 0 0 30px rgba(39, 174, 96, 0.2); max-width: 900px; margin: 0 auto;}
 .roulette-history-container { display: flex; align-items: center; justify-content: center; margin-bottom: 20px; background: #111; padding: 10px; border-radius: 10px; border: 1px solid #222;}
 .roulette-history { display: flex; gap: 5px; }
@@ -159,7 +178,7 @@ input, select { padding: 8px; border-radius: 5px; border: none; background-color
 .roulette-actions button { flex: 1; padding: 15px; font-size: 1.1em; border-radius: 10px; font-weight: bold;}
 
 /* ==========================================
-   STYLES BLACKJACK (Avec animation distribution)
+   --- BLACKJACK ---
    ========================================== */
 .bj-game-area { background-color: #0a0a0a; padding: 25px; border-radius: 15px; border: 3px solid #2980b9; box-shadow: 0 0 30px rgba(41, 128, 185, 0.2); max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px;}
 .bj-table { background: radial-gradient(circle at center, #1e8449 0%, #145a32 100%); border-radius: 100px / 50px; padding: 40px 20px; border: 10px solid #5c3a21; box-shadow: inset 0 0 40px rgba(0,0,0,0.8); min-height: 350px; display: flex; flex-direction: column; justify-content: space-between; }
@@ -168,21 +187,18 @@ input, select { padding: 8px; border-radius: 5px; border: none; background-color
 .bj-cards-container { display: flex; justify-content: center; min-height: 120px; padding-left: 40px; }
 
 /* ANIMATION DISTRIBUTION BLACKJACK */
-/* Le point de départ : en dessous de la table, face cachée (rotateY à 90deg pour qu'on ne la voie pas avant qu'elle se retourne) */
 @keyframes slideAndFlip { 
     0% { transform: translateY(150px) rotateY(90deg) scale(0.8); opacity: 0; } 
     50% { transform: translateY(-10px) rotateY(45deg) scale(1.05); opacity: 1; }
     100% { transform: translateY(0) rotateY(0deg) scale(1); opacity: 1; } 
 }
 
-/* Animation pour la carte du croupier qui est distribuée face cachée (pas de flip) */
 @keyframes slideHidden { 
     0% { transform: translateY(150px) scale(0.8); opacity: 0; } 
     50% { transform: translateY(-10px) scale(1.05); opacity: 1; }
     100% { transform: translateY(0) scale(1); opacity: 1; } 
 }
 
-/* La classe de base n'a plus l'animation par défaut */
 .bj-card { width: 80px; height: 115px; background: white; border-radius: 8px; border: 1px solid #ccc; display: flex; flex-direction: column; justify-content: space-between; padding: 5px; box-sizing: border-box; font-weight: bold; font-size: 1.2em; box-shadow: -4px 4px 10px rgba(0,0,0,0.5); position: relative; margin-left: -40px; transition: transform 0.3s;}
 .bj-card.red { color: #e74c3c; }
 .bj-card.black { color: #2c3e50; }
@@ -191,6 +207,5 @@ input, select { padding: 8px; border-radius: 5px; border: none; background-color
 .bj-card .suit-bottom { align-self: flex-end; transform: rotate(180deg); line-height: 1;}
 .bj-card .val-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2.5em; opacity: 0.15;}
 
-/* Les classes qu'on ajoutera dynamiquement en JS */
 .bj-anim-new-card { animation: slideAndFlip 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
 .bj-anim-new-hidden { animation: slideHidden 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
