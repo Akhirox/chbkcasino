@@ -25,7 +25,19 @@ input, select { padding: 8px; border-radius: 5px; border: none; background-color
 .game-tile-wrapper:hover .tile-title { color: #f1c40f; text-shadow: 0 0 15px #e67e22;}
 
 /* --- SLOT LAYOUT --- */
-.slot-layout { display: flex; justify-content: center; align-items: flex-start; gap: 30px; flex-wrap: wrap; margin-top: 20px; }
+.slot-layout { 
+    display: flex; 
+    justify-content: center; 
+    align-items: flex-start; 
+    gap: 20px; 
+    flex-wrap: nowrap; /* Force l'alignement sur une seule ligne */
+    margin-top: 20px; 
+    width: 100%;
+}
+
+/* Ajustement des largeurs pour que tout rentre */
+.left-column, .right-column { width: 250px; flex-shrink: 0; }
+.slot-machine-wrapper { flex-grow: 0; flex-shrink: 0; width: 500px; }
 .left-column { display: flex; flex-direction: column; width: 280px; }
 .right-column { display: flex; flex-direction: column; width: 280px; }
 .paytable-section { background-color: #1a1a1a; padding: 15px; border-radius: 10px; border: 2px solid #555; width: 100%; box-sizing: border-box; text-align: left; }

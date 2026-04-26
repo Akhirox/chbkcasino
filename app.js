@@ -435,32 +435,34 @@ function generateAllValidPaylines() {
 const PAYLINES = generateAllValidPaylines();
 
 const SYM_CONFIG = {
-    // Gains divisés par 2 pour équilibrer les 99 lignes
-    cherry:  { file: 'slot_cherry.png',  payout: [0.07, 0.22, 0.75] },
-    lemon:   { file: 'slot_lemon.png',   payout: [0.07, 0.22, 0.75] },
-    orange:  { file: 'slot_orange.png',  payout: [0.15, 0.35, 1.5] },
-    grapes:  { file: 'slot_grapes.png',  payout: [0.15, 0.35, 1.5] },
-    prunes:  { file: 'slot_prunes.png',  payout: [0.2, 0.6, 3] },
-    star:    { file: 'slot_star.png',    payout: [0.25, 1, 5] },
-    bell:    { file: 'slot_bell.png',    payout: [0.25, 1, 5] },
-    diamond: { file: 'slot_diamond.png', payout: [1, 5, 25] },
-    s67:     { file: 'slot_67.png',      payout: [5, 25, 100] },
+    // Gains divisés par 2 par rapport à la version précédente
+    cherry:  { file: 'slot_cherry.png',  payout: [0.03, 0.11, 0.37] },
+    lemon:   { file: 'slot_lemon.png',   payout: [0.03, 0.11, 0.37] },
+    orange:  { file: 'slot_orange.png',  payout: [0.07, 0.17, 0.75] },
+    grapes:  { file: 'slot_grapes.png',  payout: [0.07, 0.17, 0.75] },
+    prunes:  { file: 'slot_prunes.png',  payout: [0.1, 0.3, 1.5] },
+    star:    { file: 'slot_star.png',    payout: [0.12, 0.5, 2.5] },
+    bell:    { file: 'slot_bell.png',    payout: [0.12, 0.5, 2.5] },
+    diamond: { file: 'slot_diamond.png', payout: [0.5, 2.5, 12.5] },
+    s67:     { file: 'slot_67.png',      payout: [2.5, 12.5, 50] },
     wild:    { file: 'slot_wild.png',    payout: [0, 0, 0] },
+    wildx2:  { file: 'slot_wildx2.png',  payout: [0, 0, 0] }, // Nouveau !
     scatter: { file: 'slot_chbk.png',    payout: [0, 0, 0] } 
 };
 
 const reelTape = [
-    ...Array(19).fill('cherry'),   // 19 au lieu de 20
-    ...Array(16).fill('lemon'),    // 16 au lieu de 17
+    ...Array(16).fill('cherry'),   // Réduit pour compenser le WildX2
+    ...Array(16).fill('lemon'), 
     ...Array(15).fill('orange'), 
     ...Array(12).fill('grapes'), 
     ...Array(9).fill('prunes'), 
     ...Array(6).fill('star'),     
     ...Array(6).fill('bell'), 
     ...Array(5).fill('diamond'), 
-    ...Array(6).fill('wild'),      // Wild maintenu à 6%
+    ...Array(6).fill('wild'), 
+    ...Array(3).fill('wildx2'),    // 3% de chance (2x plus rare que le wild normal)
     ...Array(2).fill('s67'), 
-    ...Array(4).fill('scatter')    // SCATTER DOUBLÉ : 4 au lieu de 2 (+2%)
+    ...Array(4).fill('scatter')
 ];
 
 function updatePaytable() {
@@ -473,6 +475,10 @@ function updatePaytable() {
         const p = SYM_CONFIG[sym].payout;
         html += `<div class="paytable-row"><img src="slot_symbols/${SYM_CONFIG[sym].file}" class="paytable-sym"><span class="paytable-vals">5x: <b>${Math.max(1, Math.floor(p[2]*bet))}</b> | 4x: <b>${Math.max(1, Math.floor(p[1]*bet))}</b> | 3x: <b>${Math.max(1, Math.floor(p[0]*bet))}</b></span></div>`;
     });
+    
+    // LIGNE AJOUTÉE POUR LE WILD X2
+    html += `<div class="paytable-row" style="background: #2c3e50;"><img src="slot_symbols/slot_wildx2.png" class="paytable-sym"><span style="font-size: 0.85em; color: #f1c40f; font-weight: bold; margin-left: 10px;">WILD X2 : Double le gain !</span></div>`;
+    
     paytableContent.innerHTML = html;
 }
 
@@ -676,14 +682,14 @@ async function triggerSpinSlot() {
         
         strip.style.transition = 'none'; strip.style.transform = `translateY(0px)`;
         strip.innerHTML = oldHTML + blurHTML + finalHTML; strip.offsetHeight; 
-        const stopTime = 1.0 + (col * 0.5); 
+        const stopTime = 0.75 + (col * 0.35);
         strip.style.transition = `transform ${stopTime}s cubic-bezier(0.1, 0.7, 0.1, 1)`;
         strip.style.transform = `translateY(-${(3 + blurCount) * 80}px)`;
         
         setTimeout(() => { strip.style.transition = 'none'; strip.style.transform = `translateY(0px)`; strip.innerHTML = finalHTML; playSound('stop'); }, stopTime * 1000);
     }
 
-    setTimeout(() => clearInterval(spinTickInterval), 2900);
+    setTimeout(() => clearInterval(spinTickInterval), 2000);
 
     setTimeout(async () => {
         let totalWin = 0; let scatterCount = 0; let allWinningPaths = []; let winGridsHTML = '';
@@ -691,20 +697,43 @@ async function triggerSpinSlot() {
         for (let c = 0; c < 5; c++) for (let r = 0; r < 3; r++) if (finalGrid[c][r] === 'scatter') scatterCount++;
 
         PAYLINES.forEach((line, index) => {
-            let firstSym = null; let matchCount = 0; let winningSymbolsCoords = [];
+            let firstSym = null; 
+            let matchCount = 0; 
+            let winningSymbolsCoords = [];
+            let lineMultiplier = 1; // Par défaut x1
+
             for(let col = 0; col < 5; col++) {
-                let row = line[col]; let sym = finalGrid[col][row];
+                let row = line[col]; 
+                let sym = finalGrid[col][row];
                 if (sym === 'scatter') break;
-                if (firstSym === null) { if (sym !== 'wild') firstSym = sym; matchCount++; winningSymbolsCoords.push({col, row}); }
-                else { if (sym === firstSym || sym === 'wild') { matchCount++; winningSymbolsCoords.push({col, row}); } else break; }
+
+                // On considère Wild et WildX2 comme des jokers
+                const isAnyWild = (sym === 'wild' || sym === 'wildx2');
+                if (sym === 'wildx2') lineMultiplier *= 2; // Le Wild X2 double le gain de la ligne
+
+                if (firstSym === null) { 
+                    if (!isAnyWild) firstSym = sym; 
+                    matchCount++; 
+                    winningSymbolsCoords.push({col, row}); 
+                }
+                else { 
+                    if (sym === firstSym || isAnyWild) { 
+                        matchCount++; 
+                        winningSymbolsCoords.push({col, row}); 
+                    } else break; 
+                }
             }
             if (firstSym === null && matchCount > 0) firstSym = 's67';
             
             if (matchCount >= 3 && firstSym) {
-                let realPayout = Math.floor(bet * SYM_CONFIG[firstSym].payout[matchCount - 3]);
+                // Calcul du gain de base * le multiplicateur des Wilds X2
+                let realPayout = Math.max(1, Math.floor(bet * SYM_CONFIG[firstSym].payout[matchCount - 3]));
+                realPayout *= lineMultiplier; 
+
                 if (realPayout > 0) {
                     totalWin += realPayout;
                     allWinningPaths.push(winningSymbolsCoords);
+                    // ... (garde ton code de génération de winGridsHTML ici)
                     let gridHTML = `<div class="win-line-box"><span>Gain : +${realPayout}</span><div class="mini-grid">`;
                     for(let r=0; r<3; r++) {
                         for(let c=0; c<5; c++) {
@@ -753,13 +782,18 @@ async function triggerSpinSlot() {
         updateBalanceDisplays(currentBalance + totalWin);
         await updateDoc(doc(db, "users", user.uid), { balance: currentBalance });
         
-        isSpinningSlot = false; btnSpinSlot.disabled = false; betAmountInput.disabled = false;
-        document.querySelectorAll('.btn-bet').forEach(btn => btn.disabled = false);
+        // FIX EXPLOIT : On ne réactive les boutons QUE si la séquence est terminée
+        if (freeSpins === 0 && !isAutoSpinning) {
+            isSpinningSlot = false; 
+            btnSpinSlot.disabled = false; 
+            betAmountInput.disabled = false;
+            document.querySelectorAll('.btn-bet').forEach(btn => btn.disabled = false);
+        }
         
         if (freeSpins > 0 || isAutoSpinning) {
             if (isAutoSpinning && freeSpins === 0) autoSpinsRemaining--;
             if (isAutoSpinning && autoSpinsRemaining <= 0 && freeSpins === 0) stopAutoSpin();
-            else setTimeout(triggerSpinSlot, totalWin > 0 ? 3000 : 800); 
+            else setTimeout(triggerSpinSlot, totalWin > 0 ? 2250 : 650); 
         } else if (totalWin > 0) {
             setTimeout(() => { if(!isSpinningSlot) bigWinOverlay.classList.add('hidden'); }, 3000);
         }
