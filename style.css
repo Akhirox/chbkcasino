@@ -145,3 +145,20 @@ input, select { padding: 8px; border-radius: 5px; border: none; background-color
 .chip-1000 { background: #e74c3c; color: white;}
 .roulette-actions { display: flex; gap: 10px; }
 .roulette-actions button { flex: 1; padding: 15px; font-size: 1.1em; border-radius: 10px; font-weight: bold;}
+/* ==========================================
+   STYLES BLACKJACK
+   ========================================== */
+.bj-game-area { background-color: #0a0a0a; padding: 25px; border-radius: 15px; border: 3px solid #2980b9; box-shadow: 0 0 30px rgba(41, 128, 185, 0.2); max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px;}
+.bj-table { background: radial-gradient(circle at center, #1e8449 0%, #145a32 100%); border-radius: 100px / 50px; padding: 40px 20px; border: 10px solid #5c3a21; box-shadow: inset 0 0 40px rgba(0,0,0,0.8); min-height: 350px; display: flex; flex-direction: column; justify-content: space-between; }
+.bj-dealer-area, .bj-player-area { display: flex; flex-direction: column; align-items: center; gap: 15px; }
+.bj-score { background: rgba(0,0,0,0.7); padding: 5px 15px; border-radius: 20px; font-weight: bold; color: white; border: 1px solid rgba(255,255,255,0.2); }
+.bj-cards-container { display: flex; justify-content: center; min-height: 120px; padding-left: 40px; }
+
+/* Création des cartes en CSS */
+.bj-card { width: 80px; height: 115px; background: white; border-radius: 8px; border: 1px solid #ccc; display: flex; flex-direction: column; justify-content: space-between; padding: 5px; box-sizing: border-box; font-weight: bold; font-size: 1.2em; box-shadow: -4px 4px 10px rgba(0,0,0,0.5); position: relative; margin-left: -40px; transition: transform 0.3s;}
+.bj-card.red { color: #e74c3c; }
+.bj-card.black { color: #2c3e50; }
+.bj-card.hidden-card { background: repeating-linear-gradient(45deg, #2980b9, #2980b9 10px, #3498db 10px, #3498db 20px); border: 2px solid white; color: transparent;}
+.bj-card .suit-top { align-self: flex-start; line-height: 1;}
+.bj-card .suit-bottom { align-self: flex-end; transform: rotate(180deg); line-height: 1;}
+.bj-card .val-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2.5em; opacity: 0.15;}

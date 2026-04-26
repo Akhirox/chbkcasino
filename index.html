@@ -35,7 +35,7 @@
         <div class="games-menu">
             <button id="btn-open-slot" class="btn btn-game active-game">🎰 Machine à sous</button>
             <button id="btn-open-roulette" class="btn btn-game active-game" style="border-color: #27ae60;">🎡 Roulette</button>
-            <button class="btn btn-game" disabled>🃏 Blackjack (Bientôt)</button>
+            <button id="btn-open-blackjack" class="btn btn-game active-game" style="border-color: #2980b9;">🃏 Blackjack</button>
         </div>
     </div>
 
@@ -168,6 +168,50 @@
                         <button id="btn-repeat-roulette" class="btn btn-secondary" style="background-color: #8e44ad;">Répéter</button>
                         <button id="btn-spin-roulette" class="btn spin-btn" style="background-color: #27ae60; box-shadow: 0 4px 0 #1e8449;">LANCER LA BILLE !</button>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="blackjack-section" class="hidden">
+        <button class="btn-back-lobby btn-small" style="margin-bottom: 20px;">⬅ Retour au Lobby</button>
+        
+        <div class="roulette-layout">
+            <div class="slot-header" style="max-width: 900px; margin: 0 auto 15px auto; justify-content: flex-end;">
+                <div class="live-balance" style="background: #2980b9;">Solde : <span id="bj-brundle-balance">...</span></div>
+            </div>
+
+            <div class="bj-game-area">
+                <p id="bj-message" style="font-weight: bold; margin-bottom: 10px; color: #f1c40f; font-size: 1.2em;">Placez votre mise !</p>
+                
+                <div class="bj-table">
+                    <div class="bj-dealer-area">
+                        <div class="bj-score">Croupier : <span id="bj-dealer-score">?</span></div>
+                        <div id="bj-dealer-cards" class="bj-cards-container"></div>
+                    </div>
+                    
+                    <div class="bj-player-area">
+                        <div class="bj-score">Vous : <span id="bj-player-score">0</span></div>
+                        <div id="bj-player-cards" class="bj-cards-container"></div>
+                    </div>
+                </div>
+
+                <div id="bj-bet-controls" class="roulette-controls">
+                    <div class="chip-selector">
+                        <div class="chip bj-chip active" data-val="10">10</div>
+                        <div class="chip bj-chip" data-val="50">50</div>
+                        <div class="chip bj-chip" data-val="100">100</div>
+                        <div class="chip bj-chip" data-val="500">500</div>
+                        <div class="chip bj-chip" data-val="1000">1k</div>
+                    </div>
+                    <div class="roulette-actions">
+                        <button id="btn-bj-deal" class="btn spin-btn" style="background-color: #2980b9; box-shadow: 0 4px 0 #1f618d;">DISTRIBUER (10)</button>
+                    </div>
+                </div>
+
+                <div id="bj-action-controls" class="roulette-actions hidden" style="margin-top: 15px;">
+                    <button id="btn-bj-hit" class="btn" style="background-color: #27ae60; padding: 15px;">TIRER</button>
+                    <button id="btn-bj-stand" class="btn" style="background-color: #e74c3c; padding: 15px;">RESTER</button>
+                    <button id="btn-bj-double" class="btn" style="background-color: #f1c40f; color: black; padding: 15px;">DOUBLER</button>
                 </div>
             </div>
         </div>

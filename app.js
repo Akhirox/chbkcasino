@@ -49,6 +49,30 @@ const wheelEl = document.getElementById('roulette-wheel');
 const winnerTextEl = document.getElementById('roulette-winner-text');
 const historyEl = document.getElementById('roulette-history');
 
+// VARIABLES BLACKJACK
+const bjSection = document.getElementById('blackjack-section');
+const balanceDisplayBJ = document.getElementById('bj-brundle-balance');
+const btnOpenBJ = document.getElementById('btn-open-blackjack');
+
+const bjMessage = document.getElementById('bj-message');
+const bjDealerCards = document.getElementById('bj-dealer-cards');
+const bjPlayerCards = document.getElementById('bj-player-cards');
+const bjDealerScore = document.getElementById('bj-dealer-score');
+const bjPlayerScore = document.getElementById('bj-player-score');
+const bjBetControls = document.getElementById('bj-bet-controls');
+const bjActionControls = document.getElementById('bj-action-controls');
+
+const btnBjDeal = document.getElementById('btn-bj-deal');
+const btnBjHit = document.getElementById('btn-bj-hit');
+const btnBjStand = document.getElementById('btn-bj-stand');
+const btnBjDouble = document.getElementById('btn-bj-double');
+
+let bjDeck = [];
+let bjPlayerHand = [];
+let bjDealerHand = [];
+let bjCurrentBet = 10;
+let bjIsGameActive = false;
+
 let freeSpins = 0;
 let isSpinningSlot = false;
 let isAutoSpinning = false;
@@ -75,6 +99,7 @@ function updateBalanceDisplays(amount) {
     balanceDisplayLobby.textContent = currentBalance;
     balanceDisplaySlot.textContent = currentBalance;
     balanceDisplayRoulette.textContent = currentBalance;
+    balanceDisplayBJ.textContent = currentBalance;
 }
 
 // --- MOTEUR AUDIO ---
@@ -531,10 +556,15 @@ document.getElementById('btn-claim-bonus').addEventListener('click', async () =>
 // NAVIGATION
 document.getElementById('btn-open-slot').addEventListener('click', () => { document.getElementById('casino-section').classList.add('hidden'); slotSection.classList.remove('hidden'); });
 document.getElementById('btn-open-roulette').addEventListener('click', () => { document.getElementById('casino-section').classList.add('hidden'); rouletteSection.classList.remove('hidden'); });
+document.getElementById('btn-open-blackjack').addEventListener('click', () => { document.getElementById('casino-section').classList.add('hidden'); bjSection.classList.remove('hidden'); });
+
 document.querySelectorAll('.btn-back-lobby').forEach(btn => {
     btn.addEventListener('click', () => {
-        slotSection.classList.add('hidden'); rouletteSection.classList.add('hidden');
-        document.getElementById('casino-section').classList.remove('hidden'); stopAutoSpin();
+        slotSection.classList.add('hidden'); 
+        rouletteSection.classList.add('hidden');
+        bjSection.classList.add('hidden'); // <-- Coche le Blackjack en rentrant au lobby
+        document.getElementById('casino-section').classList.remove('hidden'); 
+        stopAutoSpin();
     });
 });
 
@@ -701,4 +731,210 @@ async function triggerSpinSlot() {
         }
 
     }, 3200); 
+}
+
+// ==========================================
+// MOTEUR DU BLACKJACK
+// ==========================================
+
+function buildDeck() {
+    const suits = ['♠', '♥', '♦', '♣'];
+    const values = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+    let deck = [];
+    for(let suit of suits) {
+        for(let value of values) {
+            deck.push({ suit, value, isRed: (suit==='♥'||suit==='♦') });
+        }
+    }
+    // Shuffle x3
+    for(let i=0; i<3; i++) deck.sort(() => Math.random() - 0.5);
+    return deck;
+}
+
+function getHandScore(hand) {
+    let score = 0; let aces = 0;
+    for(let card of hand) {
+        if(card.value === 'A') { aces++; score += 11; }
+        else if(['J','Q','K'].includes(card.value)) score += 10;
+        else score += parseInt(card.value);
+    }
+    while(score > 21 && aces > 0) { score -= 10; aces--; }
+    return score;
+}
+
+function renderCard(card, isHidden = false) {
+    if(isHidden) return `<div class="bj-card hidden-card"></div>`;
+    const colorClass = card.isRed ? 'red' : 'black';
+    return `
+        <div class="bj-card ${colorClass}">
+            <div class="suit-top">${card.value}${card.suit}</div>
+            <div class="val-center">${card.suit}</div>
+            <div class="suit-bottom">${card.value}${card.suit}</div>
+        </div>
+    `;
+}
+
+function updateBJDisplay(hideDealerSecondCard = false) {
+    bjPlayerCards.innerHTML = bjPlayerHand.map(c => renderCard(c)).join('');
+    bjPlayerScore.textContent = getHandScore(bjPlayerHand);
+
+    if(hideDealerSecondCard && bjDealerHand.length > 1) {
+        bjDealerCards.innerHTML = renderCard(bjDealerHand[0]) + renderCard(bjDealerHand[1], true);
+        bjDealerScore.textContent = "?"; // On cache le score réel
+    } else {
+        bjDealerCards.innerHTML = bjDealerHand.map(c => renderCard(c)).join('');
+        bjDealerScore.textContent = getHandScore(bjDealerHand);
+    }
+}
+
+// Sélection jetons
+document.querySelectorAll('.bj-chip').forEach(chip => {
+    chip.addEventListener('click', (e) => {
+        if(bjIsGameActive) return;
+        initAudio();
+        document.querySelectorAll('.bj-chip').forEach(c => c.classList.remove('active'));
+        e.target.classList.add('active');
+        bjCurrentBet = parseInt(e.target.dataset.val);
+        btnBjDeal.innerHTML = `DISTRIBUER (${bjCurrentBet})`;
+    });
+});
+
+// DISTRIBUER
+btnBjDeal.addEventListener('click', async () => {
+    initAudio();
+    if(currentBalance < bjCurrentBet) {
+        bjMessage.textContent = "Fonds insuffisants !";
+        bjMessage.style.color = "#e74c3c";
+        return;
+    }
+
+    bjIsGameActive = true;
+    updateBalanceDisplays(currentBalance - bjCurrentBet);
+    
+    bjBetControls.classList.add('hidden');
+    bjActionControls.classList.remove('hidden');
+    btnBjDouble.disabled = currentBalance < bjCurrentBet; // Ne peut doubler que si on a les fonds
+
+    bjDeck = buildDeck();
+    bjPlayerHand = [bjDeck.pop(), bjDeck.pop()];
+    bjDealerHand = [bjDeck.pop(), bjDeck.pop()];
+
+    bjMessage.textContent = "À vous de jouer !";
+    bjMessage.style.color = "white";
+    playSound('spin');
+
+    updateBJDisplay(true);
+
+    // Vérification Blackjack naturel
+    if(getHandScore(bjPlayerHand) === 21) {
+        await endGameBJ("BLACKJACK !");
+    }
+});
+
+// TIRER (Hit)
+btnBjHit.addEventListener('click', async () => {
+    initAudio();
+    btnBjDouble.disabled = true; // On ne peut plus doubler après avoir tiré
+    bjPlayerHand.push(bjDeck.pop());
+    playSound('spin');
+    updateBJDisplay(true);
+
+    if(getHandScore(bjPlayerHand) > 21) {
+        await endGameBJ("Vous avez sauté ! (Bust)");
+    }
+});
+
+// DOUBLER (Double Down)
+btnBjDouble.addEventListener('click', async () => {
+    initAudio();
+    updateBalanceDisplays(currentBalance - bjCurrentBet); // Débite la mise une 2ème fois
+    bjCurrentBet *= 2; 
+    
+    bjPlayerHand.push(bjDeck.pop());
+    playSound('spin');
+    updateBJDisplay(true);
+
+    if(getHandScore(bjPlayerHand) > 21) {
+        await endGameBJ("Vous avez sauté ! (Bust)");
+    } else {
+        dealerPlay(); // Le croupier joue automatiquement après un Double
+    }
+});
+
+// RESTER (Stand) -> Tour du croupier
+btnBjStand.addEventListener('click', () => {
+    initAudio();
+    dealerPlay();
+});
+
+async function dealerPlay() {
+    bjActionControls.classList.add('hidden');
+    updateBJDisplay(false); // Révèle la carte du croupier
+    playSound('spin');
+
+    // Le croupier tire jusqu'à 17
+    const dealerDraw = setInterval(() => {
+        if(getHandScore(bjDealerHand) < 17) {
+            bjDealerHand.push(bjDeck.pop());
+            playSound('spin');
+            updateBJDisplay(false);
+        } else {
+            clearInterval(dealerDraw);
+            checkWinnerBJ();
+        }
+    }, 1000);
+}
+
+async function checkWinnerBJ() {
+    const pScore = getHandScore(bjPlayerHand);
+    const dScore = getHandScore(bjDealerHand);
+    
+    if(dScore > 21) await endGameBJ("Le Croupier saute ! Vous gagnez !");
+    else if(pScore > dScore) await endGameBJ("Vous gagnez !");
+    else if(pScore < dScore) await endGameBJ("Le Croupier gagne.");
+    else await endGameBJ("Égalité (Push).");
+}
+
+async function endGameBJ(reason) {
+    const user = auth.currentUser;
+    bjActionControls.classList.add('hidden');
+    bjBetControls.classList.remove('hidden');
+    
+    const pScore = getHandScore(bjPlayerHand);
+    const dScore = getHandScore(bjDealerHand);
+    let winAmount = 0;
+
+    if (pScore <= 21) {
+        if(pScore === 21 && bjPlayerHand.length === 2 && dScore !== 21) {
+            // Blackjack Naturel paie 3:2 (donc la mise d'origine + 1.5x)
+            winAmount = bjCurrentBet + (bjCurrentBet * 1.5);
+            bjMessage.style.color = "#f1c40f";
+        } 
+        else if (dScore > 21 || pScore > dScore) {
+            winAmount = bjCurrentBet * 2;
+            bjMessage.style.color = "#2ecc71";
+            playSound('win');
+        } 
+        else if (pScore === dScore) {
+            winAmount = bjCurrentBet; // Remboursement
+            bjMessage.style.color = "white";
+        } else {
+            bjMessage.style.color = "#e74c3c";
+        }
+    } else {
+        bjMessage.style.color = "#e74c3c";
+    }
+
+    bjMessage.textContent = reason + (winAmount > 0 ? ` (+${winAmount})` : "");
+    
+    if(winAmount > 0) {
+        updateBalanceDisplays(currentBalance + winAmount);
+    }
+    
+    await updateDoc(doc(db, "users", user.uid), { balance: currentBalance });
+    
+    // Restaure la mise d'origine si elle a été doublée
+    if(bjCurrentBet > 1000) bjCurrentBet /= 2; 
+    btnBjDeal.innerHTML = `DISTRIBUER (${bjCurrentBet})`;
+    bjIsGameActive = false;
 }
