@@ -408,12 +408,31 @@ async function finishRouletteSpin(winningString) {
 // ==========================================
 // SLOT MACHINE LOGIC
 // ==========================================
-const PAYLINES = [
-    [1, 1, 1, 1, 1], [0, 0, 0, 0, 0], [2, 2, 2, 2, 2], [0, 1, 2, 1, 0], [2, 1, 0, 1, 2],
-    [0, 0, 1, 0, 0], [2, 2, 1, 2, 2], [1, 2, 2, 2, 1], [1, 0, 1, 0, 1], [1, 2, 1, 2, 1],
-    [0, 1, 0, 1, 0], [2, 1, 2, 1, 2], [1, 1, 0, 1, 1], [1, 1, 2, 1, 1], [0, 1, 1, 1, 0],
-    [2, 1, 1, 1, 2], [0, 1, 2, 2, 2], [2, 1, 0, 0, 0], [0, 0, 1, 2, 2], [2, 2, 1, 0, 0] 
-];
+// --- GÉNÉRATEUR DE LIGNES (99 Lignes) ---
+// Règle : Un symbole ne peut connecter qu'à la case adjacente, au-dessus ou en dessous (écart max de 1).
+function generateAllValidPaylines() {
+    const lines = [];
+    function buildPath(col, currentPath) {
+        // Si on a atteint la 5ème colonne, on sauvegarde la ligne complète
+        if (col === 5) {
+            lines.push([...currentPath]);
+            return;
+        }
+        // Pour chaque rangée de la colonne actuelle (0: Haut, 1: Milieu, 2: Bas)
+        for (let r = 0; r < 3; r++) {
+            // On accepte le chemin si on est sur la 1ère colonne, OU si l'écart avec le symbole précédent est <= 1
+            if (col === 0 || Math.abs(currentPath[col - 1] - r) <= 1) {
+                currentPath.push(r);
+                buildPath(col + 1, currentPath); // On passe à la colonne suivante
+                currentPath.pop(); // On retire la case pour tester la combinaison suivante
+            }
+        }
+    }
+    buildPath(0, []);
+    return lines;
+}
+
+const PAYLINES = generateAllValidPaylines();
 
 const SYM_CONFIG = {
     // x1.5 sur les fruits de base
