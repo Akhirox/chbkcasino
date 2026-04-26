@@ -682,14 +682,14 @@ async function triggerSpinSlot() {
         
         strip.style.transition = 'none'; strip.style.transform = `translateY(0px)`;
         strip.innerHTML = oldHTML + blurHTML + finalHTML; strip.offsetHeight; 
-        const stopTime = 0.75 + (col * 0.35);
+        const stopTime = 0.5 + (col * 0.25);
         strip.style.transition = `transform ${stopTime}s cubic-bezier(0.1, 0.7, 0.1, 1)`;
         strip.style.transform = `translateY(-${(3 + blurCount) * 80}px)`;
         
         setTimeout(() => { strip.style.transition = 'none'; strip.style.transform = `translateY(0px)`; strip.innerHTML = finalHTML; playSound('stop'); }, stopTime * 1000);
     }
 
-    setTimeout(() => clearInterval(spinTickInterval), 2000);
+    setTimeout(() => clearInterval(spinTickInterval), 1400);
 
     setTimeout(async () => {
         let totalWin = 0; let scatterCount = 0; let allWinningPaths = []; let winGridsHTML = '';
@@ -793,12 +793,12 @@ async function triggerSpinSlot() {
         if (freeSpins > 0 || isAutoSpinning) {
             if (isAutoSpinning && freeSpins === 0) autoSpinsRemaining--;
             if (isAutoSpinning && autoSpinsRemaining <= 0 && freeSpins === 0) stopAutoSpin();
-            else setTimeout(triggerSpinSlot, totalWin > 0 ? 2250 : 650); 
+            else setTimeout(triggerSpinSlot, totalWin > 0 ? 2000 : 400); 
         } else if (totalWin > 0) {
-            setTimeout(() => { if(!isSpinningSlot) bigWinOverlay.classList.add('hidden'); }, 3000);
+            setTimeout(() => { if(!isSpinningSlot) bigWinOverlay.classList.add('hidden'); }, 1500);
         }
 
-    }, 3200); 
+    }, 1600); 
 }
 
 // ==========================================
