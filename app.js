@@ -782,19 +782,23 @@ async function triggerSpinSlot() {
         updateBalanceDisplays(currentBalance + totalWin);
         await updateDoc(doc(db, "users", user.uid), { balance: currentBalance });
         
-        // FIX EXPLOIT : On ne réactive les boutons QUE si la séquence est terminée
+        // 1. Le spin physique est TOUJOURS terminé à ce stade, on débloque le moteur
+        isSpinningSlot = false; 
+
+        // 2. FIX EXPLOIT : On ne réactive les boutons que si le joueur a repris le contrôle manuel
         if (freeSpins === 0 && !isAutoSpinning) {
-            isSpinningSlot = false; 
             btnSpinSlot.disabled = false; 
             betAmountInput.disabled = false;
             document.querySelectorAll('.btn-bet').forEach(btn => btn.disabled = false);
         }
         
+        // 3. Gestion de la suite (Auto Spins ou Free Spins)
         if (freeSpins > 0 || isAutoSpinning) {
             if (isAutoSpinning && freeSpins === 0) autoSpinsRemaining--;
             if (isAutoSpinning && autoSpinsRemaining <= 0 && freeSpins === 0) stopAutoSpin();
             else setTimeout(triggerSpinSlot, totalWin > 0 ? 2000 : 400); 
         } else if (totalWin > 0) {
+            // L'écran Jackpot
             setTimeout(() => { if(!isSpinningSlot) bigWinOverlay.classList.add('hidden'); }, 1500);
         }
 
