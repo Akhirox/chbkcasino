@@ -946,3 +946,101 @@ async function endGameBJ(reason) {
     if(bet > lastBjBet) bjBetAmountInput.value = lastBjBet; 
     bjIsGameActive = false;
 }
+
+// ==========================================
+// FIREBASE GLOBAL & AUTHENTIFICATION
+// ==========================================
+document.getElementById('btn-google-login').addEventListener('click', () => signInWithPopup(auth, provider));
+
+const btnLogout = document.getElementById('btn-logout');
+if(btnLogout) btnLogout.addEventListener('click', () => signOut(auth));
+
+onAuthStateChanged(auth, async (user) => {
+    const topHeader = document.getElementById('top-header');
+    if (user) {
+        document.getElementById('login-section').classList.add('hidden');
+        document.getElementById('casino-section').classList.remove('hidden');
+        if(topHeader) topHeader.classList.remove('hidden');
+        
+        document.getElementById('player-name').textContent = user.displayName;
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+        
+        if (!userSnap.exists()) {
+            await setDoc(userRef, { name: user.displayName, balance: 0, lastClaimDate: null });
+            updateBalanceDisplays(0);
+        } else {
+            updateBalanceDisplays(userSnap.data().balance);
+        }
+        initReels(); updatePaytable(); 
+        initRouletteWheel(); initRouletteBoard(); 
+    } else {
+        document.getElementById('login-section').classList.remove('hidden');
+        document.getElementById('casino-section').classList.add('hidden');
+        if(topHeader) topHeader.classList.add('hidden');
+        
+        slotSection.classList.add('hidden');
+        rouletteSection.classList.add('hidden');
+        bjSection.classList.add('hidden');
+    }
+});
+
+// ==========================================
+// BONUS QUOTIDIEN
+// ==========================================
+document.getElementById('btn-claim-bonus').addEventListener('click', async () => {
+    const bonusMsg = document.getElementById('bonus-message');
+    try {
+        const user = auth.currentUser;
+        if (!user) {
+            bonusMsg.textContent = "Erreur de connexion. Recharge la page.";
+            return;
+        }
+
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+
+        if (!userSnap.exists()) return;
+
+        const today = new Date().toLocaleDateString('fr-FR');
+        
+        if (userSnap.data().lastClaimDate !== today) {
+            updateBalanceDisplays(currentBalance + 2500);
+            await updateDoc(userRef, { balance: currentBalance, lastClaimDate: today });
+            bonusMsg.textContent = "Jackpot ! +2500 Brundles.";
+            bonusMsg.style.color = "#2ecc71";
+        } else {
+            bonusMsg.textContent = "Tu as déjà récupéré tes Brundles aujourd'hui ! Reviens demain.";
+            bonusMsg.style.color = "#e74c3c";
+        }
+    } catch (error) {
+        console.error("🔥 ERREUR :", error);
+        bonusMsg.textContent = "Oups, impossible de joindre la banque.";
+        bonusMsg.style.color = "#e74c3c";
+    }
+});
+
+// ==========================================
+// NAVIGATION & RACCOURCIS CLAVIER
+// ==========================================
+document.getElementById('btn-open-slot').addEventListener('click', () => { document.getElementById('casino-section').classList.add('hidden'); slotSection.classList.remove('hidden'); });
+document.getElementById('btn-open-roulette').addEventListener('click', () => { document.getElementById('casino-section').classList.add('hidden'); rouletteSection.classList.remove('hidden'); });
+document.getElementById('btn-open-blackjack').addEventListener('click', () => { document.getElementById('casino-section').classList.add('hidden'); bjSection.classList.remove('hidden'); });
+
+document.querySelectorAll('.btn-back-lobby').forEach(btn => {
+    btn.addEventListener('click', () => {
+        slotSection.classList.add('hidden'); 
+        rouletteSection.classList.add('hidden'); 
+        bjSection.classList.add('hidden');
+        document.getElementById('casino-section').classList.remove('hidden'); 
+        stopAutoSpin();
+    });
+});
+
+window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+        if(!slotSection.classList.contains('hidden') && !btnSpinSlot.disabled && !isSpinningSlot) { e.preventDefault(); btnSpinSlot.click(); } 
+        else if (!rouletteSection.classList.contains('hidden') && !btnSpinRoulette.disabled && !isRouletteSpinning) { e.preventDefault(); btnSpinRoulette.click(); }
+        else if (!bjSection.classList.contains('hidden') && !btnBjDeal.disabled && !bjIsGameActive) { e.preventDefault(); btnBjDeal.click(); }
+    }
+});
