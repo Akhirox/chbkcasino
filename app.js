@@ -761,12 +761,20 @@ function getHandScore(hand) {
     return score;
 }
 
-function renderCard(card, isHidden = false, delayIndex = 0) {
-    const animStyle = `animation-delay: ${delayIndex * 0.2}s;`;
-    if(isHidden) return `<div class="bj-card hidden-card" style="${animStyle}"></div>`;
+function renderCard(card, isHidden = false, isNew = false, delayIndex = 0) {
+    const animStyle = isNew ? `animation-delay: ${delayIndex * 0.2}s;` : '';
+    
+    // Déterminer la bonne classe d'animation (flip ou non)
+    let animClass = '';
+    if (isNew) {
+        animClass = isHidden ? 'bj-anim-new-hidden' : 'bj-anim-new-card';
+    }
+
+    if(isHidden) return `<div class="bj-card hidden-card ${animClass}" style="${animStyle}"></div>`;
+    
     const colorClass = card.isRed ? 'red' : 'black';
     return `
-        <div class="bj-card ${colorClass}" style="${animStyle}">
+        <div class="bj-card ${colorClass} ${animClass}" style="${animStyle}">
             <div class="suit-top">${card.value}${card.suit}</div>
             <div class="val-center">${card.suit}</div>
             <div class="suit-bottom">${card.value}${card.suit}</div>
@@ -774,24 +782,40 @@ function renderCard(card, isHidden = false, delayIndex = 0) {
     `;
 }
 
-function updateBJDisplay(hideDealerSecondCard = false, isInitialDeal = false) {
+function updateBJDisplay(hideDealerSecondCard = false, isInitialDeal = false, drawSource = 'none') {
+    // drawSource permet de savoir qui vient de tirer : 'player', 'dealer', ou 'none'
     let pCardsHTML = ''; let dCardsHTML = '';
+    
     bjPlayerHand.forEach((c, i) => {
-        pCardsHTML += renderCard(c, false, isInitialDeal ? i : 0);
+        // Est-ce que cette carte vient d'être tirée ?
+        // Oui si c'est la distribution initiale, OU si c'est la toute dernière carte et que c'est le joueur qui a tiré.
+        let isNewCard = isInitialDeal || (drawSource === 'player' && i === bjPlayerHand.length - 1);
+        
+        pCardsHTML += renderCard(c, false, isNewCard, isInitialDeal ? i : 0);
         if(isInitialDeal) setTimeout(() => playSound('card'), i * 200);
+        if(!isInitialDeal && isNewCard) playSound('card');
     });
     bjPlayerCards.innerHTML = pCardsHTML;
     bjPlayerScore.textContent = getHandScore(bjPlayerHand);
 
     if(hideDealerSecondCard && bjDealerHand.length > 1) {
-        dCardsHTML += renderCard(bjDealerHand[0], false, isInitialDeal ? 0.5 : 0);
-        dCardsHTML += renderCard(bjDealerHand[1], true, isInitialDeal ? 1.5 : 0);
+        // La première carte du croupier (déjà là ou nouvelle lors du deal)
+        dCardsHTML += renderCard(bjDealerHand[0], false, isInitialDeal, isInitialDeal ? 0.5 : 0);
+        // La deuxième carte (cachée)
+        dCardsHTML += renderCard(bjDealerHand[1], true, isInitialDeal, isInitialDeal ? 1.5 : 0);
+        
         if(isInitialDeal) { setTimeout(() => playSound('card'), 500); setTimeout(() => playSound('card'), 1500); }
         bjDealerScore.textContent = "?"; 
     } else {
         bjDealerHand.forEach((c, i) => {
-            dCardsHTML += renderCard(c, false, isInitialDeal ? i : (i === bjDealerHand.length - 1 ? 0 : 0));
-            if(!isInitialDeal && i === bjDealerHand.length - 1) setTimeout(() => playSound('card'), 100);
+            // Est-ce que cette carte vient d'être tirée ?
+            let isNewCard = isInitialDeal || (drawSource === 'dealer' && i === bjDealerHand.length - 1);
+            
+            // Note : quand on retourne la carte cachée (drawSource='reveal'), on peut faire isNewCard=true pour la faire flipper !
+            if (drawSource === 'reveal' && i === 1) isNewCard = true;
+
+            dCardsHTML += renderCard(c, false, isNewCard, isInitialDeal ? i : 0);
+            if(!isInitialDeal && isNewCard) setTimeout(() => playSound('card'), 100);
         });
         bjDealerScore.textContent = getHandScore(bjDealerHand);
     }

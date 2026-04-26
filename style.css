@@ -155,16 +155,30 @@ input, select { padding: 8px; border-radius: 5px; border: none; background-color
 .bj-score { background: rgba(0,0,0,0.7); padding: 5px 15px; border-radius: 20px; font-weight: bold; color: white; border: 1px solid rgba(255,255,255,0.2); }
 .bj-cards-container { display: flex; justify-content: center; min-height: 120px; padding-left: 40px; }
 
-/* ANIMATION DISTRIBUTION */
-@keyframes dealCard { 
-    0% { transform: translate(150px, -200px) scale(0.5) rotate(180deg); opacity: 0; } 
-    100% { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 1; } 
+/* ANIMATION DISTRIBUTION BLACKJACK */
+/* Le point de départ : en dessous de la table, face cachée (rotateY à 90deg pour qu'on ne la voie pas avant qu'elle se retourne) */
+@keyframes slideAndFlip { 
+    0% { transform: translateY(150px) rotateY(90deg) scale(0.8); opacity: 0; } 
+    50% { transform: translateY(-10px) rotateY(45deg) scale(1.05); opacity: 1; }
+    100% { transform: translateY(0) rotateY(0deg) scale(1); opacity: 1; } 
 }
 
-.bj-card { width: 80px; height: 115px; background: white; border-radius: 8px; border: 1px solid #ccc; display: flex; flex-direction: column; justify-content: space-between; padding: 5px; box-sizing: border-box; font-weight: bold; font-size: 1.2em; box-shadow: -4px 4px 10px rgba(0,0,0,0.5); position: relative; margin-left: -40px; animation: dealCard 0.4s ease-out forwards;}
+/* Animation pour la carte du croupier qui est distribuée face cachée (pas de flip) */
+@keyframes slideHidden { 
+    0% { transform: translateY(150px) scale(0.8); opacity: 0; } 
+    50% { transform: translateY(-10px) scale(1.05); opacity: 1; }
+    100% { transform: translateY(0) scale(1); opacity: 1; } 
+}
+
+/* La classe de base n'a plus l'animation par défaut */
+.bj-card { width: 80px; height: 115px; background: white; border-radius: 8px; border: 1px solid #ccc; display: flex; flex-direction: column; justify-content: space-between; padding: 5px; box-sizing: border-box; font-weight: bold; font-size: 1.2em; box-shadow: -4px 4px 10px rgba(0,0,0,0.5); position: relative; margin-left: -40px; transition: transform 0.3s;}
 .bj-card.red { color: #e74c3c; }
 .bj-card.black { color: #2c3e50; }
 .bj-card.hidden-card { background: repeating-linear-gradient(45deg, #2980b9, #2980b9 10px, #3498db 10px, #3498db 20px); border: 2px solid white; color: transparent;}
 .bj-card .suit-top { align-self: flex-start; line-height: 1;}
 .bj-card .suit-bottom { align-self: flex-end; transform: rotate(180deg); line-height: 1;}
 .bj-card .val-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2.5em; opacity: 0.15;}
+
+/* Les classes qu'on ajoutera dynamiquement en JS */
+.bj-anim-new-card { animation: slideAndFlip 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+.bj-anim-new-hidden { animation: slideHidden 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
