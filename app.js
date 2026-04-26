@@ -472,6 +472,62 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
+// ==========================================
+// BONUS QUOTIDIEN (Réparé !)
+// ==========================================
+document.getElementById('btn-claim-bonus').addEventListener('click', async () => {
+    console.log("👉 1. Bouton cliqué !");
+    const bonusMsg = document.getElementById('bonus-message');
+
+    try {
+        const user = auth.currentUser;
+        console.log("👤 2. Utilisateur Firebase :", user ? user.displayName + " (" + user.uid + ")" : "AUCUN (Déconnecté ?)");
+
+        if (!user) {
+            console.warn("❌ Arrêt : Firebase dit que personne n'est connecté.");
+            bonusMsg.textContent = "Erreur de connexion. Recharge la page.";
+            return;
+        }
+
+        const userRef = doc(db, "users", user.uid);
+        console.log("📡 3. Lancement de la requête vers Firestore...");
+        
+        const userSnap = await getDoc(userRef);
+
+        if (!userSnap.exists()) {
+            console.error("❌ Arrêt : Le dossier du joueur n'existe pas dans Firestore !");
+            bonusMsg.textContent = "Erreur : Profil corrompu ou introuvable.";
+            return;
+        }
+
+        console.log("✅ 4. Dossier trouvé ! Voici ce qu'il contient :", userSnap.data());
+
+        const today = new Date().toLocaleDateString('fr-FR');
+        console.log("📅 5. Comparaison des dates -> Aujourd'hui :", today, "| En BDD :", userSnap.data().lastClaimDate);
+
+        if (userSnap.data().lastClaimDate !== today) {
+            console.log("💰 6. Les dates sont différentes : Envoi des +2500 Brundles...");
+            updateBalanceDisplays(currentBalance + 2500);
+            
+            await updateDoc(userRef, { balance: currentBalance, lastClaimDate: today });
+            console.log("🎉 7. BDD mise à jour avec succès !");
+            
+            bonusMsg.textContent = "Jackpot ! +2500 Brundles.";
+            bonusMsg.style.color = "#2ecc71";
+        } else {
+            console.log("⏳ 6bis. Les dates sont identiques : Bonus bloqué.");
+            bonusMsg.textContent = "Tu as déjà récupéré tes Brundles aujourd'hui ! Reviens demain.";
+            bonusMsg.style.color = "#e74c3c";
+        }
+
+    } catch (error) {
+        console.error("🔥 CRASH MAJEUR pendant le processus :", error);
+        bonusMsg.textContent = "Oups, impossible de joindre la banque (voir console).";
+        bonusMsg.style.color = "#e74c3c";
+    }
+});
+
+
 // NAVIGATION
 document.getElementById('btn-open-slot').addEventListener('click', () => { document.getElementById('casino-section').classList.add('hidden'); slotSection.classList.remove('hidden'); });
 document.getElementById('btn-open-roulette').addEventListener('click', () => { document.getElementById('casino-section').classList.add('hidden'); rouletteSection.classList.remove('hidden'); });
