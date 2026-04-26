@@ -792,14 +792,18 @@ async function triggerSpinSlot() {
             document.querySelectorAll('.btn-bet').forEach(btn => btn.disabled = false);
         }
         
-        // 3. Gestion de la suite (Auto Spins ou Free Spins)
+        // 3. Gestion de l'affichage du Jackpot (valable pour TOUS les modes)
+        if (totalWin > 0) {
+            // L'écran noir disparaît au bout d'une seconde (1000 ms)
+            setTimeout(() => { bigWinOverlay.classList.add('hidden'); }, 1000);
+        }
+
+        // 4. Gestion de la suite (Auto Spins ou Free Spins)
         if (freeSpins > 0 || isAutoSpinning) {
             if (isAutoSpinning && freeSpins === 0) autoSpinsRemaining--;
             if (isAutoSpinning && autoSpinsRemaining <= 0 && freeSpins === 0) stopAutoSpin();
-            else setTimeout(triggerSpinSlot, totalWin > 0 ? 2000 : 400); 
-        } else if (totalWin > 0) {
-            // L'écran Jackpot
-            setTimeout(() => { if(!isSpinningSlot) bigWinOverlay.classList.add('hidden'); }, 900);
+            // Le prochain spin part après 1.2s (soit 200ms APRÈS que le Jackpot a disparu)
+            else setTimeout(triggerSpinSlot, totalWin > 0 ? 1200 : 400); 
         }
 
     }, 1600); 
