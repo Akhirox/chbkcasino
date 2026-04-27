@@ -94,10 +94,14 @@ const RED_NUMS = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
 // --- GESTION DU SOLDE ---
 function updateBalanceDisplays(amount) {
     currentBalance = amount;
-    balanceDisplayLobby.textContent = currentBalance;
-    balanceDisplaySlot.textContent = currentBalance;
-    balanceDisplayRoulette.textContent = currentBalance;
-    balanceDisplayBJ.textContent = currentBalance;
+    
+    // L'astuce : 'de-DE' met naturellement des points pour les milliers (ex: 10.000.000)
+    const formattedBalance = currentBalance.toLocaleString('de-DE');
+    
+    if (balanceDisplayLobby) balanceDisplayLobby.textContent = formattedBalance;
+    if (balanceDisplaySlot) balanceDisplaySlot.textContent = formattedBalance;
+    if (balanceDisplayRoulette) balanceDisplayRoulette.textContent = formattedBalance;
+    if (balanceDisplayBJ) balanceDisplayBJ.textContent = formattedBalance;
 }
 
 // --- MOTEUR AUDIO ---
